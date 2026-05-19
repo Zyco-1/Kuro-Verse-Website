@@ -1,14 +1,14 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { getTrendingAnime } from '@/lib/api/anilist';
+import { getKuroTrending } from '@/lib/api/kuroverse';
 import AnimeCard from '@/components/anime/AnimeCard';
 import { TrendingUp } from 'lucide-react';
 
 export default function TrendingPage() {
   const { data, isLoading } = useQuery({
     queryKey: ['trending-full'],
-    queryFn: () => getTrendingAnime(1, 50),
+    queryFn: getKuroTrending,
   });
 
   return (
@@ -28,7 +28,7 @@ export default function TrendingPage() {
           ? [...Array(24)].map((_, i) => (
               <div key={i} className="aspect-[3/4] bg-white/5 rounded-xl animate-pulse" />
             ))
-          : data?.Page?.media?.map((anime: any) => (
+          : data?.map((anime: any) => (
               <AnimeCard key={anime.id} anime={anime} />
             ))}
       </div>

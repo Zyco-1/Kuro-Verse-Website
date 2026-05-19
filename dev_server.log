@@ -7,7 +7,7 @@ npm warn Unknown project config "npm-install-checks". This will stop working in 
 ▲ Next.js 16.2.6 (Turbopack)
 - Local:         http://localhost:3001
 - Network:       http://192.168.0.2:3001
-✓ Ready in 656ms
+✓ Ready in 712ms
 ⨯ Another next dev server is already running.
 
 - Local:        http://localhost:3000

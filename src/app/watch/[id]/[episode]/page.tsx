@@ -1,12 +1,12 @@
 'use client';
 
-import { use, useState, useEffect, useCallback } from 'react';
+import { use, useState, useEffect, useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getAnimeDetails } from '@/lib/api/anilist';
+import { getKuroAnimeDetails, getKuroEpisodes, getKuroStream } from '@/lib/api/kuroverse';
 import Player from '@/components/player/Player';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { ChevronLeft, List, Info, Share2, Download, Settings } from 'lucide-react';
+import { ChevronLeft, List, Info, Share2, Download, Settings, ToggleLeft as Toggle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useHistory } from '@/hooks/useHistory';
 import DisqusComments from '@/components/layout/DisqusComments';
@@ -19,40 +19,47 @@ export default function WatchPage({ params }: { params: Promise<{ id: string; ep
 
   const [currentEpisode, setCurrentEpisode] = useState(episode);
   const [autoNext, setAutoNext] = useState(true);
+  const [streamType, setStreamType] = useState<'sub' | 'dub'>('sub');
+  const [quality, setQuality] = useState<string | null>(null);
   const { addToHistory } = useHistory();
 
-  const { data: anime } = useQuery({
-    queryKey: ['anime', id],
-    queryFn: () => getAnimeDetails(parseInt(id)),
+  const { data: media } = useQuery({
+    queryKey: ['anime-details', id],
+    queryFn: () => getKuroAnimeDetails(id),
   });
 
   const { data: episodesData } = useQuery({
-    queryKey: ['episodes', paheId],
-    queryFn: async () => {
-      const res = await fetch(`/api/animepahe/episodes?id=${paheId}`);
-      return await res.json();
-    },
+    queryKey: ['kuro-episodes', paheId],
+    queryFn: () => getKuroEpisodes(paheId!),
     enabled: !!paheId,
   });
 
-  const episodeSession = episodesData?.data?.find((ep: any) => ep.episode === parseFloat(currentEpisode))?.session;
+  const episodeSession = useMemo(() => {
+    return episodesData?.find((ep: any) => ep.episode === parseFloat(currentEpisode))?.session;
+  }, [episodesData, currentEpisode]);
 
   const { data: streamData, isLoading: streamLoading } = useQuery({
-    queryKey: ['stream', paheId, episodeSession],
-    queryFn: async () => {
-      const res = await fetch(`/api/animepahe/stream?animeId=${paheId}&episodeId=${episodeSession}`);
-      return await res.json();
-    },
+    queryKey: ['kuro-stream', paheId, episodeSession, streamType],
+    queryFn: () => getKuroStream(paheId!, episodeSession, streamType),
     enabled: !!paheId && !!episodeSession,
   });
 
-  const streamUrl = streamData?.sources?.[0]?.url;
+  const sortedStreams = useMemo(() => {
+    return streamData?.streams?.sort((a: any, b: any) => parseInt(b.quality) - parseInt(a.quality)) || [];
+  }, [streamData]);
+
+  useEffect(() => {
+    if (sortedStreams.length > 0 && !quality) {
+      setQuality(sortedStreams[0].url);
+    }
+  }, [sortedStreams, quality]);
+
+  const streamUrl = quality || sortedStreams[0]?.url;
 
   const handleEpisodeEnd = useCallback(() => {
     if (!autoNext || !episodesData) return;
 
-    // Sort episodes in ascending order to find the next one correctly
-    const sortedEps = [...episodesData.data].sort((a: any, b: any) => a.episode - b.episode);
+    const sortedEps = [...episodesData].sort((a: any, b: any) => a.episode - b.episode);
     const currentIndex = sortedEps.findIndex((ep: any) => ep.episode === parseFloat(currentEpisode));
 
     if (currentIndex !== -1 && currentIndex < sortedEps.length - 1) {
@@ -62,17 +69,17 @@ export default function WatchPage({ params }: { params: Promise<{ id: string; ep
   }, [autoNext, episodesData, currentEpisode, id, paheId, router]);
 
   useEffect(() => {
-    if (anime?.Media && paheId) {
+    if (media && paheId) {
       addToHistory({
         id: parseInt(id),
-        episode: parseInt(currentEpisode),
-        title: anime.Media.title.english || anime.Media.title.romaji,
-        image: anime.Media.coverImage.large,
+        episode: parseFloat(currentEpisode),
+        title: media.title.english || media.title.romaji,
+        image: media.coverImage?.large,
         paheId: paheId,
         updatedAt: Date.now()
       });
     }
-  }, [anime, currentEpisode, paheId, id, addToHistory]);
+  }, [media, currentEpisode, paheId, id, addToHistory]);
 
   return (
     <div className="flex flex-col gap-8 px-6 md:px-16 py-8">
@@ -81,7 +88,7 @@ export default function WatchPage({ params }: { params: Promise<{ id: string; ep
         <Link href="/" className="hover:text-white transition-colors">HOME</Link>
         <span>/</span>
         <Link href={`/anime/${id}`} className="hover:text-white transition-colors uppercase truncate max-w-[200px]">
-          {anime?.Media?.title?.english || anime?.Media?.title?.romaji}
+          {media?.title?.english || media?.title?.romaji}
         </Link>
         <span>/</span>
         <span className="text-primary">EPISODE {currentEpisode}</span>
@@ -91,12 +98,12 @@ export default function WatchPage({ params }: { params: Promise<{ id: string; ep
         <div className="lg:col-span-3 flex flex-col gap-6">
           {streamLoading ? (
             <div className="w-full aspect-video bg-white/5 rounded-2xl animate-pulse flex items-center justify-center">
-              <div className="text-white/20 font-black text-3xl animate-bounce">LOADING STREAM...</div>
+              <div className="text-primary/20 font-black text-3xl animate-bounce">LOADING STREAM...</div>
             </div>
           ) : streamUrl ? (
             <Player
               src={streamUrl}
-              poster={anime?.Media?.bannerImage}
+              poster={media?.bannerImage}
               title={`Episode ${currentEpisode}`}
               onEnded={handleEpisodeEnd}
             />
@@ -109,24 +116,49 @@ export default function WatchPage({ params }: { params: Promise<{ id: string; ep
           <div className="flex flex-col gap-4 bg-white/5 p-8 rounded-2xl border border-white/5">
             <div className="flex items-center justify-between">
               <h1 className="text-2xl font-black uppercase tracking-tight truncate">
-                {anime?.Media?.title?.english || anime?.Media?.title?.romaji} - Episode {currentEpisode}
+                {media?.title?.english || media?.title?.romaji} - Episode {currentEpisode}
               </h1>
               <div className="flex items-center gap-3">
-                <button className="p-3 hover:bg-white/10 rounded-full text-white/50 hover:text-white transition-colors border border-white/5">
-                  <Share2 size={20} />
-                </button>
-                <button className="p-3 hover:bg-white/10 rounded-full text-white/50 hover:text-white transition-colors border border-white/5">
-                  <Download size={20} />
-                </button>
+                 {/* SUB/DUB Switcher */}
+                 <div className="flex items-center bg-black/40 rounded-full p-1 border border-white/5">
+                   <button
+                     onClick={() => setStreamType('sub')}
+                     className={cn(
+                       "px-4 py-1.5 rounded-full text-xs font-black uppercase transition-all",
+                       streamType === 'sub' ? "bg-primary text-black" : "text-white/40 hover:text-white"
+                     )}
+                   >
+                     SUB
+                   </button>
+                   <button
+                     onClick={() => setStreamType('dub')}
+                     className={cn(
+                       "px-4 py-1.5 rounded-full text-xs font-black uppercase transition-all",
+                       streamType === 'dub' ? "bg-primary text-black" : "text-white/40 hover:text-white"
+                     )}
+                   >
+                     DUB
+                   </button>
+                 </div>
               </div>
             </div>
+
             <div className="flex items-center justify-between mt-2">
               <div className="flex items-center gap-6">
-                <div className="flex items-center gap-2 bg-primary/20 text-primary px-4 py-1.5 rounded-full text-sm font-black border border-primary/20">
-                  SUB
-                </div>
+                {/* Quality Selector */}
+                {sortedStreams.length > 0 && (
+                   <select
+                    value={quality || ''}
+                    onChange={(e) => setQuality(e.target.value)}
+                    className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-xs font-bold focus:outline-none focus:ring-1 focus:ring-primary"
+                   >
+                     {sortedStreams.map((s: any) => (
+                       <option key={s.url} value={s.url}>{s.quality}p ({s.filesize})</option>
+                     ))}
+                   </select>
+                )}
                 <div className="text-white/50 font-bold text-sm">
-                  {anime?.Media?.seasonYear} • {anime?.Media?.format}
+                  {media?.seasonYear} • {media?.format}
                 </div>
               </div>
 
@@ -151,11 +183,11 @@ export default function WatchPage({ params }: { params: Promise<{ id: string; ep
           </div>
 
           <DisqusComments
-             shortname="reanime-1"
+             shortname="kuroverse"
              config={{
                url: typeof window !== 'undefined' ? window.location.href : '',
                identifier: `anime-${id}`,
-               title: anime?.Media?.title?.english || anime?.Media?.title?.romaji || 'Anime'
+               title: media?.title?.english || media?.title?.romaji || 'Anime'
              }}
           />
         </div>
@@ -167,10 +199,10 @@ export default function WatchPage({ params }: { params: Promise<{ id: string; ep
                <h3 className="font-black uppercase tracking-tighter flex items-center gap-2">
                  <List size={18} /> Episode List
                </h3>
-               <span className="text-xs font-bold text-white/30">{episodesData?.total || 0} EPS</span>
+               <span className="text-xs font-bold text-primary">{episodesData?.length || 0} EPS</span>
              </div>
              <div className="max-h-[600px] overflow-y-auto p-2 flex flex-col gap-1">
-               {[...(episodesData?.data || [])].sort((a: any, b: any) => a.episode - b.episode).map((ep: any) => (
+               {[...(episodesData || [])].sort((a: any, b: any) => a.episode - b.episode).map((ep: any) => (
                  <Link
                    key={ep.episode}
                    href={`/watch/${id}/${ep.episode}?paheId=${paheId}`}
@@ -182,11 +214,6 @@ export default function WatchPage({ params }: { params: Promise<{ id: string; ep
                    )}
                  >
                    <span>Episode {ep.episode}</span>
-                   {ep.snapshot && (
-                     <div className="w-16 h-10 relative rounded-md overflow-hidden bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity hidden md:block">
-                        <img src={ep.snapshot} className="object-cover w-full h-full" alt="" />
-                     </div>
-                   )}
                  </Link>
                ))}
              </div>

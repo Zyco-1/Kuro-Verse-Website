@@ -1,14 +1,14 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { getPopularAnime } from '@/lib/api/anilist';
+import { getKuroTopRated } from '@/lib/api/kuroverse';
 import AnimeCard from '@/components/anime/AnimeCard';
 import { Heart } from 'lucide-react';
 
 export default function PopularPage() {
   const { data, isLoading } = useQuery({
     queryKey: ['popular-full'],
-    queryFn: () => getPopularAnime(1, 50),
+    queryFn: getKuroTopRated,
   });
 
   return (
@@ -16,10 +16,10 @@ export default function PopularPage() {
       <div className="flex flex-col gap-2">
          <h1 className="text-4xl font-black uppercase tracking-tight flex items-center gap-3">
            <Heart className="text-primary fill-primary" size={32} />
-           Most Popular
+           Top Rated
          </h1>
          <p className="text-white/50 font-bold uppercase tracking-widest text-sm">
-           All time fan favorites
+           The highest rated anime on KuroVerse
          </p>
       </div>
 
@@ -28,7 +28,7 @@ export default function PopularPage() {
           ? [...Array(24)].map((_, i) => (
               <div key={i} className="aspect-[3/4] bg-white/5 rounded-xl animate-pulse" />
             ))
-          : data?.Page?.media?.map((anime: any) => (
+          : data?.map((anime: any) => (
               <AnimeCard key={anime.id} anime={anime} />
             ))}
       </div>

@@ -8,6 +8,7 @@
   --color-secondary: #161617;
   --color-muted: #111111;
   --color-accent: #facc15; /* Yellow (yellow-400) */
+  --color-background: #000000;
 }
 
 :root {

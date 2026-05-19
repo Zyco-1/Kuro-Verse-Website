@@ -1,63 +1,69 @@
 'use client';
 
-import { use } from 'react';
+import { use, useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getAnimeDetails } from '@/lib/api/anilist';
+import { getKuroAnimeDetails, searchKuro } from '@/lib/api/kuroverse';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Play, Star, Calendar, Clock, Info } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function AnimeDetailsPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
-  const { data: anime, isLoading } = useQuery({
-    queryKey: ['anime', id],
-    queryFn: () => getAnimeDetails(parseInt(id)),
+  const { id: rawId } = use(params);
+
+  // Handle both AniList IDs and AnimePahe sessions (if navigated from search)
+  const isPaheId = rawId.startsWith('pahe-');
+  const actualId = isPaheId ? rawId.replace('pahe-', '') : rawId;
+
+  const { data: media, isLoading } = useQuery({
+    queryKey: ['anime-details', actualId],
+    queryFn: () => getKuroAnimeDetails(actualId),
   });
 
   const { data: paheData, isLoading: paheLoading } = useQuery({
-    queryKey: ['pahe-search', anime?.Media?.title?.romaji],
+    queryKey: ['pahe-search-details', media?.title?.romaji],
     queryFn: async () => {
-      if (!anime?.Media?.title?.romaji) return null;
-      const res = await fetch(`/api/animepahe/search?q=${encodeURIComponent(anime.Media.title.romaji)}`);
-      const data = await res.json();
-      return data?.[0]; // Get first match
+      if (!media?.title?.romaji) return null;
+      const res = await searchKuro(media.title.romaji);
+      return res?.[0]; // Get first match
     },
-    enabled: !!anime,
+    enabled: !!media && !isPaheId,
   });
 
-  if (isLoading) return <div className="h-screen flex items-center justify-center">Loading...</div>;
+  const session = isPaheId ? actualId : paheData?.session;
 
-  const media = anime?.Media;
+  if (isLoading) return <div className="h-screen flex items-center justify-center">Loading...</div>;
+  if (!media) return <div className="h-screen flex items-center justify-center text-red-500">Anime not found</div>;
 
   return (
     <div className="flex flex-col pb-20">
       {/* Banner */}
       <div className="relative h-[400px] w-full">
         <Image
-          src={media.bannerImage || media.coverImage.extraLarge}
+          src={media.bannerImage || media.coverImage?.extraLarge || media.coverImage?.large}
           alt={media.title.romaji}
           fill
           className="object-cover opacity-50"
+          priority
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0b] to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent" />
       </div>
 
       <div className="px-6 md:px-16 -mt-32 relative z-10 flex flex-col md:flex-row gap-10">
         {/* Cover */}
         <div className="flex-shrink-0 w-64 mx-auto md:mx-0">
-          <div className="aspect-[3/4] relative rounded-2xl overflow-hidden sexy-shadow border-4 border-[#0a0a0b]">
+          <div className="aspect-[3/4] relative rounded-2xl overflow-hidden sexy-shadow border-4 border-background">
             <Image
-              src={media.coverImage.extraLarge}
+              src={media.coverImage?.extraLarge || media.coverImage?.large}
               alt={media.title.romaji}
               fill
               className="object-cover"
             />
           </div>
           <div className="mt-6 flex flex-col gap-3">
-             {paheData ? (
+             {session ? (
                <Link
-                href={`/watch/${media.id}/1?paheId=${paheData.session}`}
+                href={`/watch/${media.id}/1?paheId=${session}`}
                 className="w-full bg-primary hover:bg-primary/90 text-black py-4 rounded-xl font-black text-center flex items-center justify-center gap-2 sexy-shadow transition-all hover:scale-[1.02]"
               >
                 <Play fill="black" size={20} /> WATCH NOW
@@ -73,15 +79,15 @@ export default function AnimeDetailsPage({ params }: { params: Promise<{ id: str
         {/* Info */}
         <div className="flex-grow flex flex-col gap-6 pt-10">
           <div className="flex flex-col gap-2">
-            <h1 className="text-4xl md:text-6xl font-black tracking-tight uppercase leading-none">
+            <h1 className="text-4xl md:text-6xl font-black tracking-tight uppercase leading-none text-glow">
               {media.title.english || media.title.romaji}
             </h1>
             <h2 className="text-xl text-white/40 font-bold italic">{media.title.native}</h2>
           </div>
 
           <div className="flex flex-wrap items-center gap-4 text-sm font-bold">
-            <div className="flex items-center gap-1.5 bg-yellow-400/10 text-yellow-400 px-3 py-1.5 rounded-full border border-yellow-400/20">
-              <Star size={14} className="fill-yellow-400" />
+            <div className="flex items-center gap-1.5 bg-accent/10 text-accent px-3 py-1.5 rounded-full border border-accent/20">
+              <Star size={14} className="fill-accent" />
               {media.averageScore}%
             </div>
             <div className="flex items-center gap-1.5 bg-white/5 px-3 py-1.5 rounded-full border border-white/10">
@@ -98,7 +104,7 @@ export default function AnimeDetailsPage({ params }: { params: Promise<{ id: str
           </div>
 
           <div className="flex flex-wrap gap-2">
-            {media.genres.map((genre: string) => (
+            {media.genres?.map((genre: string) => (
               <span key={genre} className="bg-white/5 hover:bg-white/10 px-4 py-2 rounded-lg text-xs font-bold transition-colors cursor-default border border-white/5 uppercase">
                 {genre}
               </span>
@@ -119,11 +125,11 @@ export default function AnimeDetailsPage({ params }: { params: Promise<{ id: str
             </div>
             <div>
               <div className="text-white/40 text-xs font-black uppercase mb-1">Studio</div>
-              <div className="font-bold">{media.studios?.nodes?.[0]?.name}</div>
+              <div className="font-bold">{media.studios?.nodes?.[0]?.name || 'N/A'}</div>
             </div>
              <div>
-              <div className="text-white/40 text-xs font-black uppercase mb-1">Duration</div>
-              <div className="font-bold">24 min</div>
+              <div className="text-white/40 text-xs font-black uppercase mb-1">Status</div>
+              <div className="font-bold">{media.status}</div>
             </div>
           </div>
         </div>
