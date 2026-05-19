@@ -26,7 +26,7 @@ export default function AnimeCard({ anime }: AnimeCardProps) {
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
             <div className="bg-primary p-4 rounded-full sexy-shadow transform scale-0 group-hover:scale-100 transition-transform duration-300">
-              <Play fill="white" className="text-white ml-1" />
+              <Play fill="black" className="text-black ml-1" />
             </div>
           </div>
           <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-md px-2 py-1 rounded text-[10px] font-bold flex items-center gap-1 border border-white/10">
@@ -34,7 +34,7 @@ export default function AnimeCard({ anime }: AnimeCardProps) {
             {anime.averageScore ? (anime.averageScore / 10).toFixed(1) : 'N/A'}
           </div>
           <div className="absolute bottom-2 left-2 flex gap-1">
-             <span className="bg-primary/90 backdrop-blur-md text-[9px] font-black px-1.5 py-0.5 rounded text-white uppercase tracking-wider">
+             <span className="bg-primary/90 backdrop-blur-md text-[9px] font-black px-1.5 py-0.5 rounded text-black uppercase tracking-wider">
                {anime.format}
              </span>
           </div>

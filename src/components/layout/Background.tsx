@@ -20,7 +20,7 @@ export default function Background() {
           repeat: Infinity,
           ease: "linear"
         }}
-        className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary/10 blur-[120px]"
+        className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary/5 blur-[120px]"
       />
 
       {/* Animated Gradient Blob 2 */}
@@ -35,7 +35,7 @@ export default function Background() {
           repeat: Infinity,
           ease: "linear"
         }}
-        className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-blue-500/5 blur-[120px]"
+        className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-accent/5 blur-[120px]"
       />
 
       {/* Grid Pattern */}

@@ -59,9 +59,9 @@ export default function Home() {
               <div className="flex items-center gap-4 mt-4">
                 <Link
                   href={`/anime/${featured.id}`}
-                  className="bg-primary hover:bg-primary/90 text-white px-8 py-4 rounded-full font-bold flex items-center gap-2 transition-all hover:scale-105 sexy-shadow"
+                  className="bg-primary hover:bg-primary/90 text-black px-8 py-4 rounded-full font-bold flex items-center gap-2 transition-all hover:scale-105 sexy-shadow"
                 >
-                  <Play fill="white" size={20} /> Watch Now
+                  <Play fill="black" size={20} /> Watch Now
                 </Link>
                 <Link
                   href={`/anime/${featured.id}`}

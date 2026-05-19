@@ -13,9 +13,22 @@ interface DisqusCommentsProps {
 
 export default function DisqusComments({ shortname, config }: DisqusCommentsProps) {
   useEffect(() => {
+    // If Disqus is already loaded, reset it instead of re-injecting
+    if ((window as any).DISQUS) {
+      (window as any).DISQUS.reset({
+        reload: true,
+        config: function () {
+          this.page.url = config.url;
+          this.page.identifier = config.identifier;
+          this.page.title = config.title;
+        }
+      });
+      return;
+    }
+
     const d = document, s = d.createElement('script');
     s.src = `https://${shortname}.disqus.com/embed.js`;
-    s.setAttribute('data-timestamp', new Date().toString());
+    s.setAttribute('data-timestamp', new Date().getTime().toString());
     (d.head || d.body).appendChild(s);
 
     (window as any).disqus_config = function () {

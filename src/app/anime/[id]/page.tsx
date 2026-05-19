@@ -58,9 +58,9 @@ export default function AnimeDetailsPage({ params }: { params: Promise<{ id: str
              {paheData ? (
                <Link
                 href={`/watch/${media.id}/1?paheId=${paheData.session}`}
-                className="w-full bg-primary hover:bg-primary/90 text-white py-4 rounded-xl font-black text-center flex items-center justify-center gap-2 sexy-shadow transition-all hover:scale-[1.02]"
+                className="w-full bg-primary hover:bg-primary/90 text-black py-4 rounded-xl font-black text-center flex items-center justify-center gap-2 sexy-shadow transition-all hover:scale-[1.02]"
               >
-                <Play fill="white" size={20} /> WATCH NOW
+                <Play fill="black" size={20} /> WATCH NOW
               </Link>
              ) : (
                 <div className="w-full bg-white/5 text-white/50 py-4 rounded-xl font-bold text-center border border-white/5">

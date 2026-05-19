@@ -1,13 +1,13 @@
 @import "tailwindcss";
 
 @theme {
-  --color-background: #0a0a0b;
+  --color-background: #000000;
   --color-foreground: #ffffff;
-  --color-primary: #ff3e3e;
-  --color-primary-foreground: #ffffff;
+  --color-primary: #a3e635; /* Light Green (lime-400) */
+  --color-primary-foreground: #000000;
   --color-secondary: #161617;
-  --color-muted: #1e1e20;
-  --color-accent: #ff3e3e;
+  --color-muted: #111111;
+  --color-accent: #facc15; /* Yellow (yellow-400) */
 }
 
 :root {
@@ -28,11 +28,11 @@ body {
 }
 
 .sexy-shadow {
-  box-shadow: 0 0 40px rgba(255, 62, 62, 0.15);
+  box-shadow: 0 0 40px rgba(163, 230, 53, 0.15);
 }
 
 .text-glow {
-  text-shadow: 0 0 20px rgba(255, 62, 62, 0.5);
+  text-shadow: 0 0 20px rgba(163, 230, 53, 0.5);
 }
 
 .card-gradient {
@@ -61,5 +61,5 @@ body {
   border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #ff3e3e;
+  background: #a3e635;
 }

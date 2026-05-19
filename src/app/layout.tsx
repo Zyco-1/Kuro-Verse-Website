@@ -19,9 +19,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <title>REANIME - Watch Anime for Free</title>
+        <title>KuroVerse - Watch Anime for Free</title>
         <meta name="description" content="Modern, fast, and sexy anime streaming." />
-        <meta name="theme-color" content="#ff3e3e" />
+        <meta name="theme-color" content="#a3e635" />
         <link rel="manifest" href="/manifest.json" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />

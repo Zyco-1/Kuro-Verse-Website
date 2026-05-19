@@ -35,7 +35,7 @@ export default function WatchPage({ params }: { params: Promise<{ id: string; ep
     enabled: !!paheId,
   });
 
-  const episodeSession = episodesData?.data?.find((ep: any) => ep.episode === parseInt(currentEpisode))?.session;
+  const episodeSession = episodesData?.data?.find((ep: any) => ep.episode === parseFloat(currentEpisode))?.session;
 
   const { data: streamData, isLoading: streamLoading } = useQuery({
     queryKey: ['stream', paheId, episodeSession],
@@ -51,8 +51,12 @@ export default function WatchPage({ params }: { params: Promise<{ id: string; ep
   const handleEpisodeEnd = useCallback(() => {
     if (!autoNext || !episodesData) return;
 
-    const nextEp = episodesData.data.find((ep: any) => ep.episode === parseInt(currentEpisode) + 1);
-    if (nextEp) {
+    // Sort episodes in ascending order to find the next one correctly
+    const sortedEps = [...episodesData.data].sort((a: any, b: any) => a.episode - b.episode);
+    const currentIndex = sortedEps.findIndex((ep: any) => ep.episode === parseFloat(currentEpisode));
+
+    if (currentIndex !== -1 && currentIndex < sortedEps.length - 1) {
+      const nextEp = sortedEps[currentIndex + 1];
       router.push(`/watch/${id}/${nextEp.episode}?paheId=${paheId}`);
     }
   }, [autoNext, episodesData, currentEpisode, id, paheId, router]);
@@ -166,14 +170,14 @@ export default function WatchPage({ params }: { params: Promise<{ id: string; ep
                <span className="text-xs font-bold text-white/30">{episodesData?.total || 0} EPS</span>
              </div>
              <div className="max-h-[600px] overflow-y-auto p-2 flex flex-col gap-1">
-               {episodesData?.data?.map((ep: any) => (
+               {[...(episodesData?.data || [])].sort((a: any, b: any) => a.episode - b.episode).map((ep: any) => (
                  <Link
                    key={ep.episode}
                    href={`/watch/${id}/${ep.episode}?paheId=${paheId}`}
                    className={cn(
                      "px-4 py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-between group",
-                     parseInt(currentEpisode) === ep.episode
-                        ? "bg-primary text-white sexy-shadow"
+                     parseFloat(currentEpisode) === ep.episode
+                        ? "bg-primary text-black sexy-shadow"
                         : "hover:bg-white/5 text-white/50 hover:text-white"
                    )}
                  >
