@@ -10,16 +10,24 @@ import { getAniListMediaByTitle } from '@/lib/api/anilist';
 export default function AnimeCard({ anime }: { anime: any }) {
   const isKuroOnly = !anime?.id && (anime?.session || anime?.episode);
 
+  // Extract title correctly whether it's an object or a string
+  const kuroTitle = typeof anime?.title === 'string'
+    ? anime.title
+    : (anime?.title?.romaji || anime?.title?.english || anime?.title?.native || 'Unknown');
+
   const { data: aniListData, isLoading: isMetadataLoading } = useQuery({
-    queryKey: ['anilist-metadata', anime?.title?.romaji || anime?.title],
-    queryFn: () => getAniListMediaByTitle(anime?.title?.romaji || anime?.title),
-    enabled: isKuroOnly && !!(anime?.title?.romaji || anime?.title),
+    queryKey: ['anilist-metadata', kuroTitle],
+    queryFn: () => getAniListMediaByTitle(kuroTitle),
+    enabled: isKuroOnly && kuroTitle !== 'Unknown',
     staleTime: 1000 * 60 * 60, // 1 hour
   });
 
   const displayAnime = aniListData || anime;
 
-  const title = displayAnime?.title?.english || displayAnime?.title?.romaji || displayAnime?.title || anime?.title || 'Unknown Anime';
+  const title = typeof displayAnime?.title === 'object'
+    ? (displayAnime?.title?.english || displayAnime?.title?.romaji || displayAnime?.title?.native)
+    : (displayAnime?.title || kuroTitle);
+
   const image = displayAnime?.coverImage?.large || displayAnime?.coverImage?.extraLarge || anime?.poster || anime?.image || '/placeholder.png';
   const rating = displayAnime?.averageScore || displayAnime?.score || 'N/A';
   const id = displayAnime?.id;
@@ -31,12 +39,12 @@ export default function AnimeCard({ anime }: { anime: any }) {
       className="group relative flex flex-col gap-3"
     >
       <Link
-        href={id ? `/anime/${id}` : (session ? `/anime/pahe-${session}?title=${encodeURIComponent(title)}` : '#')}
+        href={id ? `/anime/${id}` : (session ? `/anime/pahe-${session}?title=${encodeURIComponent(title || '')}` : '#')}
         className="aspect-[3/4] relative rounded-2xl overflow-hidden sexy-shadow block bg-white/5"
       >
         <Image
           src={image}
-          alt={title}
+          alt={title || 'Anime'}
           fill
           sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 15vw"
           className="object-cover transition-transform duration-500 group-hover:scale-110"

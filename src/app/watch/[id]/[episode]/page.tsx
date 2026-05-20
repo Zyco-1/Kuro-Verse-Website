@@ -2,7 +2,8 @@
 
 import { use, useState, useEffect, useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getKuroAnimeDetails, getKuroEpisodes, getKuroStream } from '@/lib/api/kuroverse';
+import { getKuroEpisodes, getKuroStream } from '@/lib/api/kuroverse';
+import { getAniListMedia } from '@/lib/api/anilist';
 import Player from '@/components/player/Player';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -24,8 +25,8 @@ export default function WatchPage({ params }: { params: Promise<{ id: string; ep
   const { addToHistory } = useHistory();
 
   const { data: media, isLoading: mediaLoading } = useQuery({
-    queryKey: ['anime-details', id],
-    queryFn: () => getKuroAnimeDetails(id),
+    queryKey: ['anime-details-anilist', id],
+    queryFn: () => getAniListMedia(id),
   });
 
   const { data: episodesData, isLoading: episodesLoading } = useQuery({
@@ -82,10 +83,10 @@ export default function WatchPage({ params }: { params: Promise<{ id: string; ep
   }, [media, currentEpisode, paheId, id, addToHistory]);
 
   const disqusConfig = useMemo(() => ({
-    url: typeof window !== 'undefined' ? window.location.origin + window.location.pathname + window.location.search : '',
+    url: typeof window !== 'undefined' ? window.location.origin + window.location.pathname + `?paheId=${paheId}` : '',
     identifier: `anime-${id}`,
     title: media?.title?.english || media?.title?.romaji || media?.title || 'Anime'
-  }), [id, media]);
+  }), [id, media, paheId]);
 
   if (!paheId) {
       return (
@@ -138,7 +139,7 @@ export default function WatchPage({ params }: { params: Promise<{ id: string; ep
           <div className="flex flex-col gap-4 bg-white/5 p-8 rounded-2xl border border-white/5">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <h1 className="text-2xl font-black uppercase tracking-tight truncate max-w-xl">
-                {media?.title?.english || media?.title?.romaji || media?.title} - Episode {currentEpisode}
+                {media?.title?.english || media?.title?.romaji} - Episode {currentEpisode}
               </h1>
               <div className="flex items-center gap-3 shrink-0">
                  <div className="flex items-center bg-black/40 rounded-full p-1 border border-white/5">
