@@ -13,8 +13,8 @@ interface PlayerProps {
 }
 
 export default function Player({ src, poster, title, onEnded }: PlayerProps) {
-  const onPlayerError = (event: MediaErrorEvent) => {
-    console.error('Vidstack Player Error:', event.detail);
+  const onPlayerError = (detail: any, event: MediaErrorEvent) => {
+    console.error('Vidstack Player Error:', detail, event);
   };
 
   return (

@@ -119,9 +119,14 @@ export async function GET(request: NextRequest) {
     const headers = getCorsHeaders();
     headers.set('Content-Type', contentType);
 
-    if (response.headers['content-range']) headers.set('Content-Range', response.headers['content-range']);
-    if (response.headers['accept-ranges']) headers.set('Accept-Ranges', response.headers['accept-ranges']);
-    if (response.headers['content-length']) headers.set('Content-Length', response.headers['content-length']);
+    if (response.headers['content-range']) headers.set('Content-Range', String(response.headers['content-range']));
+    if (response.headers['accept-ranges']) headers.set('Accept-Ranges', String(response.headers['accept-ranges']));
+
+    // Only set Content-Length if the body was NOT modified (m3u8 files are modified)
+    const isManifest = (typeof contentType === 'string' && (contentType.includes('mpegurl') || contentType.includes('application/vnd.apple.mpegurl'))) || url.includes('.m3u8');
+    if (response.headers['content-length'] && !isManifest) {
+      headers.set('Content-Length', String(response.headers['content-length']));
+    }
 
     if (url.includes('.m3u8') || url.includes('.key') || url.includes('mon.key')) {
       headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
