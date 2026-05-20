@@ -55,7 +55,9 @@ export default function WatchPage({ params }: { params: Promise<{ id: string; ep
     }
   }, [sortedStreams]);
 
-  const streamUrl = quality || sortedStreams[0]?.url;
+  const rawStreamUrl = quality || sortedStreams[0]?.url;
+  // Use our proxy for m3u8 links to handle headers and cookies
+  const streamUrl = rawStreamUrl ? `/api/proxy?url=${encodeURIComponent(rawStreamUrl)}` : null;
 
   const handleEpisodeEnd = useCallback(() => {
     if (!autoNext || !episodesData) return;

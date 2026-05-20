@@ -29,7 +29,12 @@ export default function AnimeCard({ anime }: { anime: any }) {
     : (displayAnime?.title || kuroTitle);
 
   const image = displayAnime?.coverImage?.large || displayAnime?.coverImage?.extraLarge || anime?.poster || anime?.image || '/placeholder.png';
-  const rating = displayAnime?.averageScore || displayAnime?.score || 'N/A';
+
+  const rawRating = displayAnime?.averageScore || displayAnime?.score;
+  const rating = typeof rawRating === 'number'
+    ? (rawRating > 10 ? (rawRating / 10).toFixed(1) : rawRating.toFixed(1))
+    : 'N/A';
+
   const id = displayAnime?.id;
   const session = anime?.session;
 
@@ -60,7 +65,7 @@ export default function AnimeCard({ anime }: { anime: any }) {
               {isMetadataLoading && isKuroOnly ? '...' : rating}
           </span>
         </div>
-        {anime?.episode && (
+        {anime?.episode !== undefined && (
             <div className="absolute bottom-3 right-3 bg-primary text-black px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest">
                 EP {anime.episode}
             </div>

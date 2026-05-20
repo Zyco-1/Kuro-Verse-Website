@@ -5,42 +5,69 @@ import { Search, Menu, User, LogOut, LogIn, X, Mail, Lock, Sparkles } from 'luci
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import { supabase } from '@/lib/supabase';
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthModalMode] = useState<'login' | 'signup'>('login');
-  const [user, setUser] = useState<{ name: string; email: string } | null>(null);
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
     };
 
-    const savedUser = localStorage.getItem('kuroverse_user');
-    if (savedUser) {
-        try {
-            setUser(JSON.parse(savedUser));
-        } catch (e) {
-            localStorage.removeItem('kuroverse_user');
-        }
-    }
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
 
     window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    return () => {
+        window.removeEventListener('scroll', handleScroll);
+        subscription.unsubscribe();
+    };
   }, []);
 
-  const handleAuth = (_e?: React.FormEvent) => {
-    _e?.preventDefault();
-    const mockUser = { name: 'KuroMember', email: 'user@example.com' };
-    localStorage.setItem('kuroverse_user', JSON.stringify(mockUser));
-    setUser(mockUser);
-    setIsAuthModalOpen(false);
+  const handleAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+        if (authMode === 'signup') {
+            const { error } = await supabase.auth.signUp({ email, password });
+            if (error) throw error;
+            alert('Check your email for confirmation!');
+        } else {
+            const { error } = await supabase.auth.signInWithPassword({ email, password });
+            if (error) throw error;
+        }
+        setIsAuthModalOpen(false);
+    } catch (error: any) {
+        alert(error.message);
+    } finally {
+        setLoading(false);
+    }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('kuroverse_user');
-    setUser(null);
+  const handleGoogleLogin = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin
+      }
+    });
+    if (error) alert(error.message);
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
   };
 
   return (
@@ -73,7 +100,9 @@ export default function Navbar() {
             <div className="flex items-center gap-4">
                 <div className="hidden md:flex items-center gap-2 bg-white/5 px-4 py-2 rounded-full border border-white/5 hover:border-primary/30 transition-all">
                     <User size={18} className="text-primary" />
-                    <span className="text-xs font-black uppercase tracking-widest">{user.name}</span>
+                    <span className="text-xs font-black uppercase tracking-widest truncate max-w-[100px]">
+                        {user.email?.split('@')[0]}
+                    </span>
                 </div>
                 <button onClick={handleLogout} className="p-2 hover:bg-white/5 rounded-full text-white/50 hover:text-red-500 transition-colors">
                     <LogOut size={20} />
@@ -126,22 +155,13 @@ export default function Navbar() {
                     </div>
 
                     <form onSubmit={handleAuth} className="flex flex-col gap-4">
-                        {authMode === 'signup' && (
-                             <div className="relative">
-                                <User className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20" size={18} />
-                                <input
-                                    type="text"
-                                    placeholder="Username"
-                                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-6 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-bold"
-                                    required
-                                />
-                            </div>
-                        )}
                         <div className="relative">
                             <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20" size={18} />
                             <input
                                 type="email"
                                 placeholder="Email Address"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
                                 className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-6 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-bold"
                                 required
                             />
@@ -151,15 +171,18 @@ export default function Navbar() {
                             <input
                                 type="password"
                                 placeholder="Password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
                                 className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-6 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-bold"
                                 required
                             />
                         </div>
                         <button
                             type="submit"
-                            className="w-full bg-primary text-black py-4 rounded-2xl font-black uppercase tracking-widest hover:scale-[1.02] transition-all shadow-xl shadow-primary/20 mt-2"
+                            disabled={loading}
+                            className="w-full bg-primary text-black py-4 rounded-2xl font-black uppercase tracking-widest hover:scale-[1.02] transition-all shadow-xl shadow-primary/20 mt-2 disabled:opacity-50"
                         >
-                            {authMode === 'login' ? 'Login' : 'Sign Up'}
+                            {loading ? 'Processing...' : (authMode === 'login' ? 'Login' : 'Sign Up')}
                         </button>
                     </form>
 
@@ -171,7 +194,7 @@ export default function Navbar() {
                         </div>
 
                         <button
-                            onClick={handleAuth}
+                            onClick={handleGoogleLogin}
                             className="w-full bg-white text-black py-4 rounded-2xl font-black uppercase tracking-widest hover:scale-[1.02] transition-all flex items-center justify-center gap-3"
                         >
                             Continue with Google

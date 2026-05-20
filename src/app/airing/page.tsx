@@ -28,8 +28,8 @@ export default function AiringPage() {
           ? [...Array(12)].map((_, i) => (
               <div key={i} className="aspect-[3/4] bg-white/5 rounded-xl animate-pulse" />
             ))
-          : data?.map((anime: any) => (
-                <AnimeCard key={anime.id} anime={anime} />
+          : data?.map((item: any, idx: number) => (
+                <AnimeCard key={idx} anime={item.media ? { ...item.media, episode: item.episode } : item} />
             ))}
       </div>
     </div>

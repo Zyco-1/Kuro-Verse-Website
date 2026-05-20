@@ -2,31 +2,32 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { getKuroRecent } from '@/lib/api/kuroverse';
-import { queryAniList, GET_TRENDING, GET_POPULAR } from '@/lib/api/anilist';
+import { getTrending, getPopular } from '@/lib/api/anilist';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Play, TrendingUp, Sparkles, Clock, ChevronRight } from 'lucide-react';
 import AnimeCard from '@/components/anime/AnimeCard';
+import { cn } from '@/lib/utils';
 
 export default function Home() {
-  const { data: trendingData, isLoading: trendingLoading } = useQuery({
-    queryKey: ['trending-anilist'],
-    queryFn: () => queryAniList(GET_TRENDING, { perPage: 12 }),
+  const { data: trending, isLoading: trendingLoading } = useQuery({
+    queryKey: ['trending-anilist-home'],
+    queryFn: () => getTrending(1, 12),
   });
 
-  const { data: popularData, isLoading: popularLoading } = useQuery({
-    queryKey: ['popular-anilist'],
-    queryFn: () => queryAniList(GET_POPULAR, { perPage: 12 }),
+  const { data: popular, isLoading: popularLoading } = useQuery({
+    queryKey: ['popular-anilist-home'],
+    queryFn: () => getPopular(1, 12),
   });
 
   const { data: recent, isLoading: recentLoading } = useQuery({
-    queryKey: ['recent'],
+    queryKey: ['recent-kuro'],
     queryFn: getKuroRecent,
   });
 
-  const trending = trendingData?.Page?.media;
-  const popular = popularData?.Page?.media;
-  const featured = trending?.[0];
+  const trendingAnimes = trending || [];
+  const popularAnimes = popular || [];
+  const featured = trendingAnimes[0];
 
   return (
     <div className="flex flex-col gap-16 pb-20">
@@ -46,13 +47,16 @@ export default function Home() {
             <div className="absolute bottom-0 left-0 p-8 md:p-16 flex flex-col gap-6 max-w-3xl">
                 <div className="flex items-center gap-3">
                     <span className="bg-primary text-black text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">Featured</span>
-                    <span className="text-white/60 text-[10px] font-black uppercase tracking-widest">{featured?.format} • {featured?.averageScore}% Score</span>
+                    <span className="text-white/60 text-[10px] font-black uppercase tracking-widest">{featured?.format} • {featured?.averageScore ? (featured.averageScore / 10).toFixed(1) : 'N/A'}/10 Rating</span>
                 </div>
-                <h1 className="text-4xl md:text-7xl font-black uppercase tracking-tighter leading-none text-glow">
+                <h1 className={cn(
+                    "font-black uppercase tracking-tighter leading-none text-glow",
+                    (featured?.title?.english || featured?.title?.romaji || '').length > 30 ? "text-3xl md:text-5xl" : "text-4xl md:text-7xl"
+                )}>
                 {featured?.title?.english || featured?.title?.romaji || featured?.title}
                 </h1>
                 <p className="text-white/60 line-clamp-3 text-lg font-medium leading-relaxed"
-                   dangerouslySetInnerHTML={{ __html: featured?.description }} />
+                   dangerouslySetInnerHTML={{ __html: featured?.description || '' }} />
 
                 <div className="flex items-center gap-4 mt-4">
                 <Link
@@ -86,7 +90,9 @@ export default function Home() {
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
           {recentLoading
             ? [...Array(6)].map((_, i) => <div key={i} className="aspect-[3/4] bg-white/5 rounded-2xl animate-pulse" />)
-            : recent?.slice(0, 12).map((anime: any) => <AnimeCard key={anime.id || anime.session} anime={anime} />)}
+            : recent?.slice(0, 12).map((item: any, idx: number) => (
+                <AnimeCard key={idx} anime={item.media ? { ...item.media, episode: item.episode } : item} />
+            ))}
         </div>
       </section>
 
@@ -107,7 +113,7 @@ export default function Home() {
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
           {trendingLoading
             ? [...Array(6)].map((_, i) => <div key={i} className="aspect-[3/4] bg-white/5 rounded-2xl animate-pulse" />)
-            : trending?.slice(0, 12).map((anime: any) => <AnimeCard key={anime.id} anime={anime} />)}
+            : trendingAnimes.map((anime: any) => <AnimeCard key={anime.id} anime={anime} />)}
         </div>
       </section>
 
@@ -128,7 +134,7 @@ export default function Home() {
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
           {popularLoading
             ? [...Array(6)].map((_, i) => <div key={i} className="aspect-[3/4] bg-white/5 rounded-2xl animate-pulse" />)
-            : popular?.slice(0, 12).map((anime: any) => <AnimeCard key={anime.id} anime={anime} />)}
+            : popularAnimes.map((anime: any) => <AnimeCard key={anime.id} anime={anime} />)}
         </div>
       </section>
     </div>
