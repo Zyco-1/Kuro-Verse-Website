@@ -8,9 +8,8 @@ npm warn Unknown project config "npm-install-checks". This will stop working in 
    - Network:      http://192.168.0.2:3000
 
  ✓ Starting...
- ✓ Ready in 2.2s
- ○ Compiling /search ...
- ✓ Compiled /search in 10.7s (1735 modules)
- GET /search 200 in 13120ms
- ✓ Compiled in 2.6s (814 modules)
-[?25h
+ ✓ Ready in 2s
+ ○ Compiling / ...
+ ✓ Compiled / in 4.8s (1741 modules)
+ GET / 200 in 5944ms
+ ✓ Compiled in 1242ms (817 modules)

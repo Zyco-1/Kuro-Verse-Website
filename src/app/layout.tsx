@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   description: 'Modern, fast, and sexy anime streaming.',
   manifest: '/manifest.json',
   icons: {
-    icon: '/favicon.ico',
+    icon: '/logo.png',
   },
 };
 
