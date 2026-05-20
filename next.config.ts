@@ -11,6 +11,22 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'artworks.thetvdb.com',
       },
+      {
+        protocol: 'https',
+        hostname: 'i.animepahe.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'i.animepahe.ru',
+      },
+      {
+        protocol: 'https',
+        hostname: 'animepahe.ru',
+      },
+      {
+        protocol: 'https',
+        hostname: 'animepahe.com',
+      },
     ],
   },
 };

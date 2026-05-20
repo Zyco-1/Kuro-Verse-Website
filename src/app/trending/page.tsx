@@ -1,14 +1,14 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { getKuroTrending } from '@/lib/api/kuroverse';
-import AnimeCard from '@/components/anime/AnimeCard';
+import { getTrending } from '@/lib/api/anilist';
 import { TrendingUp } from 'lucide-react';
+import AnimeCard from '@/components/anime/AnimeCard';
 
 export default function TrendingPage() {
   const { data, isLoading } = useQuery({
     queryKey: ['trending-full'],
-    queryFn: getKuroTrending,
+    queryFn: () => getTrending(1, 24),
   });
 
   return (
@@ -19,17 +19,17 @@ export default function TrendingPage() {
            Trending Now
          </h1>
          <p className="text-white/50 font-bold uppercase tracking-widest text-sm">
-           The most talked about anime right now
+           Most talked about anime this week
          </p>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
         {isLoading
-          ? [...Array(24)].map((_, i) => (
+          ? [...Array(12)].map((_, i) => (
               <div key={i} className="aspect-[3/4] bg-white/5 rounded-xl animate-pulse" />
             ))
           : data?.map((anime: any) => (
-              <AnimeCard key={anime.id} anime={anime} />
+                <AnimeCard key={anime.id} anime={anime} />
             ))}
       </div>
     </div>

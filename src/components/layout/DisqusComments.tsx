@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 interface DisqusProps {
   shortname: string;
@@ -12,13 +12,18 @@ interface DisqusProps {
 }
 
 export default function DisqusComments({ shortname, config }: DisqusProps) {
+  const lastIdentifier = useRef<string | null>(null);
+
   useEffect(() => {
+    // Only proceed if identifier has actually changed
+    if (lastIdentifier.current === config.identifier) return;
+    lastIdentifier.current = config.identifier;
+
     const d = document;
     const s = d.createElement('script');
     s.src = `https://${shortname}.disqus.com/embed.js`;
     s.setAttribute('data-timestamp', (+new Date()).toString());
 
-    // Ensure DISQUS exists before calling reset
     if ((window as any).DISQUS) {
       (window as any).DISQUS.reset({
         reload: true,
@@ -39,7 +44,7 @@ export default function DisqusComments({ shortname, config }: DisqusProps) {
         (d.head || d.body).appendChild(s);
       }
     }
-  }, [config, shortname]);
+  }, [config.identifier, config.url, config.title, shortname]);
 
   return (
     <div className="mt-12 bg-white/5 p-8 rounded-2xl border border-white/5 shadow-2xl">

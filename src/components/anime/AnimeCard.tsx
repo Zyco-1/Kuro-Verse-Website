@@ -4,12 +4,25 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Play, Star } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useQuery } from '@tanstack/react-query';
+import { getAniListMediaByTitle } from '@/lib/api/anilist';
 
 export default function AnimeCard({ anime }: { anime: any }) {
-  const title = anime?.title?.english || anime?.title?.romaji || anime?.title || 'Unknown Anime';
-  const image = anime?.coverImage?.large || anime?.coverImage?.extraLarge || anime?.poster || anime?.image;
-  const rating = anime?.averageScore || anime?.score || 'N/A';
-  const id = anime?.id;
+  const isKuroOnly = !anime?.id && (anime?.session || anime?.episode);
+
+  const { data: aniListData, isLoading: isMetadataLoading } = useQuery({
+    queryKey: ['anilist-metadata', anime?.title?.romaji || anime?.title],
+    queryFn: () => getAniListMediaByTitle(anime?.title?.romaji || anime?.title),
+    enabled: isKuroOnly && !!(anime?.title?.romaji || anime?.title),
+    staleTime: 1000 * 60 * 60, // 1 hour
+  });
+
+  const displayAnime = aniListData || anime;
+
+  const title = displayAnime?.title?.english || displayAnime?.title?.romaji || displayAnime?.title || anime?.title || 'Unknown Anime';
+  const image = displayAnime?.coverImage?.large || displayAnime?.coverImage?.extraLarge || anime?.poster || anime?.image || '/placeholder.png';
+  const rating = displayAnime?.averageScore || displayAnime?.score || 'N/A';
+  const id = displayAnime?.id;
   const session = anime?.session;
 
   return (
@@ -18,13 +31,14 @@ export default function AnimeCard({ anime }: { anime: any }) {
       className="group relative flex flex-col gap-3"
     >
       <Link
-        href={id ? `/anime/${id}` : `/anime/pahe-${session}?title=${encodeURIComponent(title)}`}
-        className="aspect-[3/4] relative rounded-2xl overflow-hidden sexy-shadow block"
+        href={id ? `/anime/${id}` : (session ? `/anime/pahe-${session}?title=${encodeURIComponent(title)}` : '#')}
+        className="aspect-[3/4] relative rounded-2xl overflow-hidden sexy-shadow block bg-white/5"
       >
         <Image
-          src={image || '/placeholder.png'}
+          src={image}
           alt={title}
           fill
+          sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 15vw"
           className="object-cover transition-transform duration-500 group-hover:scale-110"
         />
         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px]">
@@ -34,8 +48,15 @@ export default function AnimeCard({ anime }: { anime: any }) {
         </div>
         <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/10">
           <Star size={12} className="text-accent fill-accent" />
-          <span className="text-[10px] font-black">{rating}</span>
+          <span className="text-[10px] font-black">
+              {isMetadataLoading && isKuroOnly ? '...' : rating}
+          </span>
         </div>
+        {anime?.episode && (
+            <div className="absolute bottom-3 right-3 bg-primary text-black px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest">
+                EP {anime.episode}
+            </div>
+        )}
       </Link>
 
       <div className="flex flex-col gap-1 px-1">
@@ -43,8 +64,8 @@ export default function AnimeCard({ anime }: { anime: any }) {
           {title}
         </h3>
         <div className="flex items-center justify-between text-[10px] font-bold text-white/40 uppercase tracking-widest">
-           <span>{anime?.format || anime?.type || 'TV'}</span>
-           <span>{anime?.seasonYear || anime?.year || ''}</span>
+           <span>{displayAnime?.format || displayAnime?.type || 'TV'}</span>
+           <span>{displayAnime?.seasonYear || displayAnime?.year || ''}</span>
         </div>
       </div>
     </motion.div>

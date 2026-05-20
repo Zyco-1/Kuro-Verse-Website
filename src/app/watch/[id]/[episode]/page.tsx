@@ -81,6 +81,12 @@ export default function WatchPage({ params }: { params: Promise<{ id: string; ep
     }
   }, [media, currentEpisode, paheId, id, addToHistory]);
 
+  const disqusConfig = useMemo(() => ({
+    url: typeof window !== 'undefined' ? window.location.origin + window.location.pathname + window.location.search : '',
+    identifier: `anime-${id}`,
+    title: media?.title?.english || media?.title?.romaji || media?.title || 'Anime'
+  }), [id, media]);
+
   if (!paheId) {
       return (
           <div className="h-screen flex flex-col items-center justify-center gap-4 text-center px-6">
@@ -198,11 +204,7 @@ export default function WatchPage({ params }: { params: Promise<{ id: string; ep
 
           <DisqusComments
              shortname="kuroverse"
-             config={{
-               url: typeof window !== 'undefined' ? window.location.href : '',
-               identifier: `anime-${id}`,
-               title: media?.title?.english || media?.title?.romaji || media?.title || 'Anime'
-             }}
+             config={disqusConfig}
           />
         </div>
 
