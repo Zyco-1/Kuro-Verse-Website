@@ -1,183 +1,131 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { getKuroTrending, getKuroRecent } from '@/lib/api/kuroverse';
-import AnimeCard from '@/components/anime/AnimeCard';
-import { motion } from 'framer-motion';
-import { ChevronRight, Play, Zap, TrendingUp, RefreshCcw } from 'lucide-react';
-import Link from 'next/link';
+import { getKuroTrending, getKuroTopRated, getKuroRecent } from '@/lib/api/kuroverse';
 import Image from 'next/image';
-import { useHistory } from '@/hooks/useHistory';
+import Link from 'next/link';
+import { Play, TrendingUp, Sparkles, Clock, ChevronRight } from 'lucide-react';
+import AnimeCard from '@/components/anime/AnimeCard';
 
 export default function Home() {
-  const { history } = useHistory();
-
-  const { data: trendingData, isLoading: trendingLoading, error: trendingError, refetch: refetchTrending } = useQuery({
+  const { data: trending, isLoading: trendingLoading } = useQuery({
     queryKey: ['trending'],
     queryFn: getKuroTrending,
-    retry: 2,
   });
 
-  const { data: recentData, isLoading: recentLoading, error: recentError, refetch: refetchRecent } = useQuery({
+  const { data: popular, isLoading: popularLoading } = useQuery({
+    queryKey: ['popular'],
+    queryFn: getKuroTopRated,
+  });
+
+  const { data: recent, isLoading: recentLoading } = useQuery({
     queryKey: ['recent'],
     queryFn: getKuroRecent,
-    retry: 2,
   });
 
-  const featured = trendingData?.[0];
-
-  if (trendingError || recentError) {
-    return (
-      <div className="h-[70vh] flex flex-col items-center justify-center gap-4 px-6 text-center">
-        <div className="text-primary text-6xl font-black italic mb-4 uppercase tracking-tighter">ERROR LOADED</div>
-        <p className="text-white/50 max-w-md font-bold">Something went wrong while connecting to KuroVerse. Please try again or check your connection.</p>
-        <button
-          onClick={() => { refetchTrending(); refetchRecent(); }}
-          className="mt-4 bg-primary text-black px-8 py-3 rounded-full font-black flex items-center gap-2 hover:scale-105 transition-all"
-        >
-          <RefreshCcw size={20} /> TRY RELOAD
-        </button>
-      </div>
-    );
-  }
+  const featured = trending?.[0];
 
   return (
-    <div className="flex flex-col gap-12 pb-20">
+    <div className="flex flex-col gap-16 pb-20">
       {/* Hero Section */}
-      <section className="relative h-[70vh] w-full flex items-end px-6 md:px-16 pb-12 overflow-hidden">
+      <section className="relative h-[600px] w-full px-6 md:px-16 pt-10">
         {featured ? (
-          <>
-            <div className="absolute inset-0 -z-10">
-              <Image
-                src={featured.bannerImage || featured.coverImage?.extraLarge || featured.coverImage?.large || featured.poster}
+          <div className="relative h-full w-full rounded-3xl overflow-hidden sexy-shadow">
+            <Image
+                src={featured?.bannerImage || featured.coverImage?.extraLarge || featured.coverImage?.large || featured.poster || ''}
                 alt={featured.title?.english || featured.title?.romaji || featured.title || 'Featured'}
                 fill
-                className="object-cover opacity-40"
+                className="object-cover opacity-60"
                 priority
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
-              <div className="absolute inset-0 bg-gradient-to-r from-background via-transparent to-transparent" />
-            </div>
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="max-w-3xl flex flex-col gap-4"
-            >
-              <div className="flex items-center gap-3">
-                <span className="bg-primary text-black text-[10px] font-black px-2 py-1 rounded uppercase tracking-[0.2em]">Trending Now</span>
-                <span className="text-white/50 text-sm font-bold">#1 Spotlight</span>
-              </div>
-              <h1 className="text-5xl md:text-8xl font-black tracking-tighter leading-[0.9] uppercase text-glow">
+            <div className="absolute bottom-0 left-0 p-8 md:p-16 flex flex-col gap-6 max-w-3xl">
+                <div className="flex items-center gap-3">
+                    <span className="bg-primary text-black text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">Featured</span>
+                    <span className="text-white/60 text-[10px] font-black uppercase tracking-widest">{featured?.format} • {featured?.averageScore}% Score</span>
+                </div>
+                <h1 className="text-4xl md:text-7xl font-black uppercase tracking-tighter leading-none text-glow">
                 {featured.title?.english || featured.title?.romaji || featured.title}
-              </h1>
-              <p className="text-white/60 line-clamp-3 text-lg font-medium leading-relaxed"
-                 dangerouslySetInnerHTML={{ __html: featured.description || 'No description available for this anime.' }} />
+                </h1>
+                <p className="text-white/60 line-clamp-3 text-lg font-medium leading-relaxed"
+                   dangerouslySetInnerHTML={{ __html: featured?.description }} />
 
-              <div className="flex items-center gap-4 mt-4">
+                <div className="flex items-center gap-4 mt-4">
                 <Link
                   href={featured.id ? `/anime/${featured.id}` : `/anime/pahe-${featured.session}?title=${encodeURIComponent(featured.title?.romaji || featured.title)}`}
-                  className="bg-primary hover:bg-primary/90 text-black px-8 py-4 rounded-full font-bold flex items-center gap-2 transition-all hover:scale-105 sexy-shadow"
+                  className="bg-primary text-black px-8 py-4 rounded-2xl font-black flex items-center gap-3 hover:scale-105 transition-all shadow-xl shadow-primary/20"
                 >
-                  <Play fill="black" size={20} /> Watch Now
+                    <Play fill="black" size={20} /> WATCH NOW
                 </Link>
-                <Link
-                  href={featured.id ? `/anime/${featured.id}` : `/anime/pahe-${featured.session}?title=${encodeURIComponent(featured.title?.romaji || featured.title)}`}
-                  className="bg-white/10 hover:bg-white/20 text-white px-8 py-4 rounded-full font-bold backdrop-blur-md transition-all"
-                >
-                  View Details
-                </Link>
-              </div>
-            </motion.div>
-          </>
-        ) : trendingLoading ? (
-            <div className="w-full h-full bg-white/5 animate-pulse" />
-        ) : null}
+                </div>
+            </div>
+          </div>
+        ) : (
+          <div className="h-full w-full bg-white/5 animate-pulse rounded-3xl" />
+        )}
+      </section>
+
+      {/* Recent Releases */}
+      <section className="px-6 md:px-16 flex flex-col gap-8">
+        <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-1">
+            <h2 className="text-3xl font-black uppercase tracking-tight flex items-center gap-3">
+              <Clock className="text-primary" /> Recent Releases
+            </h2>
+            <div className="h-1 w-20 bg-primary rounded-full" />
+          </div>
+          <Link href="/airing" className="group flex items-center gap-2 text-xs font-black uppercase tracking-widest text-white/40 hover:text-white transition-colors">
+            View All <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
+          {recentLoading
+            ? [...Array(6)].map((_, i) => <div key={i} className="aspect-[3/4] bg-white/5 rounded-2xl animate-pulse" />)
+            : recent?.slice(0, 12).map((anime: any) => <AnimeCard key={anime.id || anime.session} anime={anime} />)}
+        </div>
       </section>
 
       {/* Trending Section */}
-      <section className="px-6 md:px-16 flex flex-col gap-6">
+      <section className="px-6 md:px-16 flex flex-col gap-8">
         <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-black uppercase tracking-tight flex items-center gap-2">
-            <TrendingUp className="text-primary" size={24} />
-            Trending Anime
-          </h2>
-          <Link href="/trending" className="text-white/50 hover:text-primary transition-colors text-sm font-bold flex items-center">
-            View All <ChevronRight size={16} />
+          <div className="flex flex-col gap-1">
+            <h2 className="text-3xl font-black uppercase tracking-tight flex items-center gap-3">
+              <TrendingUp className="text-primary" /> Trending Now
+            </h2>
+            <div className="h-1 w-20 bg-primary rounded-full" />
+          </div>
+           <Link href="/trending" className="group flex items-center gap-2 text-xs font-black uppercase tracking-widest text-white/40 hover:text-white transition-colors">
+            View All <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
           </Link>
         </div>
+
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
           {trendingLoading
-            ? [...Array(12)].map((_, i) => (
-                <div key={i} className="aspect-[3/4] bg-white/5 rounded-xl animate-pulse" />
-              ))
-            : trendingData?.slice(0, 12).map((anime: any, i: number) => (
-                <AnimeCard key={anime.id || i} anime={anime} />
-              ))}
+            ? [...Array(6)].map((_, i) => <div key={i} className="aspect-[3/4] bg-white/5 rounded-2xl animate-pulse" />)
+            : trending?.slice(0, 12).map((anime: any) => <AnimeCard key={anime.id} anime={anime} />)}
         </div>
       </section>
 
-      {/* Continue Watching */}
-      {history.length > 0 && (
-        <section className="px-6 md:px-16 flex flex-col gap-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-black uppercase tracking-tight flex items-center gap-2">
-              <span className="w-2 h-8 bg-accent rounded-full" />
-              Continue Watching
-            </h2>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
-            {history.map((item) => (
-              <motion.div
-                key={item.id}
-                whileHover={{ y: -5 }}
-                className="group relative flex flex-col gap-2 cursor-pointer"
-              >
-                <Link href={`/watch/${item.id}/${item.episode}?paheId=${item.paheId}`}>
-                  <div className="relative aspect-[16/9] overflow-hidden rounded-xl bg-muted">
-                    <Image
-                      src={item.image}
-                      alt={item.title}
-                      fill
-                      className="object-cover transition-transform duration-500 group-hover:scale-110"
-                    />
-                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <div className="bg-primary p-3 rounded-full">
-                        <Play fill="black" size={16} className="text-black ml-0.5" />
-                      </div>
-                    </div>
-                    <div className="absolute bottom-2 right-2 bg-black/80 px-2 py-1 rounded text-[10px] font-bold">
-                      EP {item.episode}
-                    </div>
-                  </div>
-                  <div className="mt-2">
-                    <h3 className="text-sm font-bold line-clamp-1 group-hover:text-primary transition-colors">
-                      {item.title}
-                    </h3>
-                  </div>
-                </Link>
-              </motion.div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Recent Releases */}
-      <section className="px-6 md:px-16 flex flex-col gap-6">
+      {/* Popular Section */}
+      <section className="px-6 md:px-16 flex flex-col gap-8">
         <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-black uppercase tracking-tight flex items-center gap-2">
-            <Zap className="text-accent" size={24} />
-            Recent Releases
-          </h2>
+          <div className="flex flex-col gap-1">
+            <h2 className="text-3xl font-black uppercase tracking-tight flex items-center gap-3">
+              <Sparkles className="text-primary" /> Most Popular
+            </h2>
+            <div className="h-1 w-20 bg-primary rounded-full" />
+          </div>
+           <Link href="/popular" className="group flex items-center gap-2 text-xs font-black uppercase tracking-widest text-white/40 hover:text-white transition-colors">
+            View All <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
+          </Link>
         </div>
+
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
-          {recentLoading
-            ? [...Array(12)].map((_, i) => (
-                <div key={i} className="aspect-[3/4] bg-white/5 rounded-xl animate-pulse" />
-              ))
-            : recentData?.slice(0, 12).map((anime: any, i: number) => (
-                <AnimeCard key={anime.id || i} anime={anime} />
-              ))}
+          {popularLoading
+            ? [...Array(6)].map((_, i) => <div key={i} className="aspect-[3/4] bg-white/5 rounded-2xl animate-pulse" />)
+            : popular?.slice(0, 12).map((anime: any) => <AnimeCard key={anime.id} anime={anime} />)}
         </div>
       </section>
     </div>

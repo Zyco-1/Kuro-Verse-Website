@@ -1,31 +1,21 @@
 @import "tailwindcss";
 
 @theme {
-  --color-background: #000000;
-  --color-foreground: #ffffff;
-  --color-primary: #a3e635; /* Light Green (lime-400) */
-  --color-primary-foreground: #000000;
-  --color-secondary: #161617;
-  --color-muted: #111111;
-  --color-accent: #facc15; /* Yellow (yellow-400) */
-  --color-background: #000000;
+  --color-primary: #a3e635;
+  --color-accent: #facc15;
 }
 
 :root {
-  --background: #0a0a0b;
+  --background: #000000;
   --foreground: #ffffff;
+  --primary: #a3e635;
+  --accent: #facc15;
 }
 
 body {
-  background-color: var(--background);
-  color: var(--foreground);
+  background-color: #000000;
+  color: #ffffff;
   font-family: 'Inter', sans-serif;
-}
-
-.glass {
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .sexy-shadow {
@@ -36,26 +26,11 @@ body {
   text-shadow: 0 0 20px rgba(163, 230, 53, 0.5);
 }
 
-.card-gradient {
-  background: linear-gradient(to bottom, transparent, rgba(10, 10, 11, 0.8));
-}
-
-@keyframes float {
-  0% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
-  100% { transform: translateY(0px); }
-}
-
-.animate-float {
-  animation: float 6s ease-in-out infinite;
-}
-
-/* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #0a0a0b;
+  background: #000000;
 }
 ::-webkit-scrollbar-thumb {
   background: #1e1e20;

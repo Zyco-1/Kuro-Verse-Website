@@ -1,73 +1,52 @@
 'use client';
 
-import Link from 'next/link';
 import Image from 'next/image';
-import { motion } from 'framer-motion';
+import Link from 'next/link';
 import { Play, Star } from 'lucide-react';
+import { motion } from 'framer-motion';
 
-interface AnimeCardProps {
-  anime: any;
-}
-
-export default function AnimeCard({ anime }: AnimeCardProps) {
-  const id = anime.id;
-  const session = anime.session;
-  const title = anime.title?.english || anime.title?.romaji || anime.title;
-  const image = anime.coverImage?.large || anime.coverImage?.extraLarge || anime.poster || anime.image;
-  const rating = anime.averageScore ? (anime.averageScore / 10).toFixed(1) : anime.score || 'N/A';
-  const format = anime.format || anime.type || 'TV';
-  const year = anime.seasonYear || anime.year || '';
-  const episodes = anime.episodes ? `${anime.episodes} Eps` : anime.status || '';
-
-  // If we have a session but no ID, we use a prefix to handle it in the details page
-  const href = id
-    ? `/anime/${id}`
-    : session
-      ? `/anime/pahe-${session}?title=${encodeURIComponent(typeof title === 'string' ? title : '')}`
-      : '#';
+export default function AnimeCard({ anime }: { anime: any }) {
+  const title = anime?.title?.english || anime?.title?.romaji || anime?.title || 'Unknown Anime';
+  const image = anime?.coverImage?.large || anime?.coverImage?.extraLarge || anime?.poster || anime?.image;
+  const rating = anime?.averageScore || anime?.score || 'N/A';
+  const id = anime?.id;
+  const session = anime?.session;
 
   return (
     <motion.div
-      whileHover={{ y: -5 }}
-      className="group relative flex flex-col gap-2 cursor-pointer"
+      whileHover={{ y: -8 }}
+      className="group relative flex flex-col gap-3"
     >
-      <Link href={href}>
-        <div className="relative aspect-[3/4] overflow-hidden rounded-xl bg-muted">
-          {image ? (
-            <Image
-              src={image}
-              alt={typeof title === 'string' ? title : 'Anime'}
-              fill
-              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 16vw"
-              className="object-cover transition-transform duration-500 group-hover:scale-110"
-            />
-          ) : (
-             <div className="w-full h-full bg-white/5 flex items-center justify-center text-[10px] font-bold text-white/20 uppercase">No Image</div>
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-            <div className="bg-primary p-4 rounded-full sexy-shadow transform scale-0 group-hover:scale-100 transition-transform duration-300">
-              <Play fill="black" className="text-black ml-1" />
-            </div>
-          </div>
-          <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-md px-2 py-1 rounded text-[10px] font-bold flex items-center gap-1 border border-white/10">
-            <Star size={10} className="text-accent fill-accent" />
-            {rating}
-          </div>
-          <div className="absolute bottom-2 left-2 flex gap-1">
-             <span className="bg-primary/90 backdrop-blur-md text-[9px] font-black px-1.5 py-0.5 rounded text-black uppercase tracking-wider">
-               {format}
-             </span>
-          </div>
+      <Link
+        href={id ? `/anime/${id}` : `/anime/pahe-${session}?title=${encodeURIComponent(title)}`}
+        className="aspect-[3/4] relative rounded-2xl overflow-hidden sexy-shadow block"
+      >
+        <Image
+          src={image || '/placeholder.png'}
+          alt={title}
+          fill
+          className="object-cover transition-transform duration-500 group-hover:scale-110"
+        />
+        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px]">
+           <div className="w-14 h-14 bg-primary text-black rounded-full flex items-center justify-center scale-75 group-hover:scale-100 transition-transform duration-300 shadow-2xl shadow-primary/50">
+              <Play fill="black" size={28} className="ml-1" />
+           </div>
         </div>
-        <div className="mt-1">
-          <h3 className="text-sm font-bold line-clamp-2 group-hover:text-primary transition-colors">
-            {title}
-          </h3>
-          <p className="text-[11px] text-white/50 font-medium mt-0.5">
-            {year} {year && episodes ? '•' : ''} {episodes}
-          </p>
+        <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/10">
+          <Star size={12} className="text-accent fill-accent" />
+          <span className="text-[10px] font-black">{rating}</span>
         </div>
       </Link>
+
+      <div className="flex flex-col gap-1 px-1">
+        <h3 className="font-black text-sm uppercase tracking-tight line-clamp-1 group-hover:text-primary transition-colors">
+          {title}
+        </h3>
+        <div className="flex items-center justify-between text-[10px] font-bold text-white/40 uppercase tracking-widest">
+           <span>{anime?.format || anime?.type || 'TV'}</span>
+           <span>{anime?.seasonYear || anime?.year || ''}</span>
+        </div>
+      </div>
     </motion.div>
   );
 }

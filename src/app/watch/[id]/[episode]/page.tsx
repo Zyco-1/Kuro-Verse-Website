@@ -6,7 +6,7 @@ import { getKuroAnimeDetails, getKuroEpisodes, getKuroStream } from '@/lib/api/k
 import Player from '@/components/player/Player';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { ChevronLeft, List, Info, Share2, Download, Settings, ToggleLeft as Toggle, RefreshCcw } from 'lucide-react';
+import { List, Info, RefreshCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useHistory } from '@/hooks/useHistory';
 import DisqusComments from '@/components/layout/DisqusComments';
@@ -17,7 +17,7 @@ export default function WatchPage({ params }: { params: Promise<{ id: string; ep
   const router = useRouter();
   const paheId = searchParams.get('paheId');
 
-  const [currentEpisode, setCurrentEpisode] = useState(episode);
+  const currentEpisode = episode;
   const [autoNext, setAutoNext] = useState(true);
   const [streamType, setStreamType] = useState<'sub' | 'dub'>('sub');
   const [quality, setQuality] = useState<string | null>(null);
@@ -28,7 +28,7 @@ export default function WatchPage({ params }: { params: Promise<{ id: string; ep
     queryFn: () => getKuroAnimeDetails(id),
   });
 
-  const { data: episodesData, isLoading: episodesLoading, error: episodesError } = useQuery({
+  const { data: episodesData, isLoading: episodesLoading } = useQuery({
     queryKey: ['kuro-episodes', paheId],
     queryFn: () => getKuroEpisodes(paheId!),
     enabled: !!paheId,
@@ -38,7 +38,7 @@ export default function WatchPage({ params }: { params: Promise<{ id: string; ep
     return episodesData?.find((ep: any) => ep.episode === parseFloat(currentEpisode))?.session;
   }, [episodesData, currentEpisode]);
 
-  const { data: streamData, isLoading: streamLoading, error: streamError, refetch: refetchStream } = useQuery({
+  const { data: streamData, isLoading: streamLoading, refetch: refetchStream } = useQuery({
     queryKey: ['kuro-stream', paheId, episodeSession, streamType],
     queryFn: () => getKuroStream(paheId!, episodeSession, streamType),
     enabled: !!paheId && !!episodeSession,
@@ -73,8 +73,8 @@ export default function WatchPage({ params }: { params: Promise<{ id: string; ep
       addToHistory({
         id: parseInt(id),
         episode: parseFloat(currentEpisode),
-        title: media.title.english || media.title.romaji,
-        image: media.coverImage?.large,
+        title: media.title?.english || media.title?.romaji || media.title || 'Unknown Anime',
+        image: media.coverImage?.large || media.coverImage?.medium || media?.bannerImage,
         paheId: paheId,
         updatedAt: Date.now()
       });
@@ -93,12 +93,11 @@ export default function WatchPage({ params }: { params: Promise<{ id: string; ep
 
   return (
     <div className="flex flex-col gap-8 px-6 md:px-16 py-8">
-      {/* Breadcrumbs */}
       <div className="flex items-center gap-2 text-sm font-bold text-white/50 uppercase tracking-widest overflow-hidden">
         <Link href="/" className="hover:text-white transition-colors shrink-0">HOME</Link>
         <span>/</span>
         <Link href={`/anime/${id}`} className="hover:text-white transition-colors truncate max-w-[150px] md:max-w-none">
-          {mediaLoading ? '...' : (media?.title?.english || media?.title?.romaji)}
+          {mediaLoading ? '...' : (media?.title?.english || media?.title?.romaji || media?.title || 'Anime')}
         </Link>
         <span>/</span>
         <span className="text-primary shrink-0">EP {currentEpisode}</span>
@@ -115,8 +114,9 @@ export default function WatchPage({ params }: { params: Promise<{ id: string; ep
             </div>
           ) : streamUrl ? (
             <Player
+              key={streamUrl}
               src={streamUrl}
-              poster={media?.bannerImage}
+              poster={media?.bannerImage || media?.coverImage?.large}
               title={`Episode ${currentEpisode}`}
               onEnded={handleEpisodeEnd}
             />
@@ -132,10 +132,9 @@ export default function WatchPage({ params }: { params: Promise<{ id: string; ep
           <div className="flex flex-col gap-4 bg-white/5 p-8 rounded-2xl border border-white/5">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <h1 className="text-2xl font-black uppercase tracking-tight truncate max-w-xl">
-                {media?.title?.english || media?.title?.romaji} - Episode {currentEpisode}
+                {media?.title?.english || media?.title?.romaji || media?.title} - Episode {currentEpisode}
               </h1>
               <div className="flex items-center gap-3 shrink-0">
-                 {/* SUB/DUB Switcher */}
                  <div className="flex items-center bg-black/40 rounded-full p-1 border border-white/5">
                    <button
                      onClick={() => setStreamType('sub')}
@@ -161,7 +160,6 @@ export default function WatchPage({ params }: { params: Promise<{ id: string; ep
 
             <div className="flex items-center justify-between mt-2 border-t border-white/5 pt-4">
               <div className="flex items-center gap-6">
-                {/* Quality Selector */}
                 {sortedStreams.length > 0 && (
                    <select
                     value={quality || ''}
@@ -203,12 +201,11 @@ export default function WatchPage({ params }: { params: Promise<{ id: string; ep
              config={{
                url: typeof window !== 'undefined' ? window.location.href : '',
                identifier: `anime-${id}`,
-               title: media?.title?.english || media?.title?.romaji || 'Anime'
+               title: media?.title?.english || media?.title?.romaji || media?.title || 'Anime'
              }}
           />
         </div>
 
-        {/* Sidebar */}
         <div className="flex flex-col gap-6">
            <div className="bg-white/5 rounded-2xl border border-white/5 flex flex-col overflow-hidden">
              <div className="p-5 border-b border-white/5 bg-white/5 flex items-center justify-between">
@@ -220,7 +217,7 @@ export default function WatchPage({ params }: { params: Promise<{ id: string; ep
              <div className="max-h-[600px] overflow-y-auto p-2 flex flex-col gap-1">
                {episodesLoading ? (
                    [...Array(10)].map((_, i) => <div key={i} className="h-10 bg-white/5 rounded-xl animate-pulse" />)
-               ) : (episodesData || []).sort((a: any, b: any) => a.episode - b.episode).map((ep: any) => (
+               ) : (episodesData || []).slice().sort((a: any, b: any) => a.episode - b.episode).map((ep: any) => (
                  <Link
                    key={ep.episode}
                    href={`/watch/${id}/${ep.episode}?paheId=${paheId}`}

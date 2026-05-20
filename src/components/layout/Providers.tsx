@@ -1,41 +1,49 @@
 'use client';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import Background from '@/components/layout/Background';
-import Navbar from '@/components/layout/Navbar';
-import ProgressBar from '@/components/layout/ProgressBar';
-import { Suspense } from 'react';
+import { usePathname } from 'next/navigation';
+import NProgress from 'nprogress';
+import { useEffect } from 'react';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 60 * 1000,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 export default function Providers({ children }: { children: React.ReactNode }) {
-  const [queryClient] = useState(() => new QueryClient({
-    defaultOptions: {
-      queries: {
-        staleTime: 1000 * 60 * 5, // 5 minutes
-        refetchOnWindowFocus: false,
-      },
-    },
-  }));
+  const pathname = usePathname();
+
+  useEffect(() => {
+    NProgress.configure({ showSpinner: false });
+
+    const handleStart = () => NProgress.start();
+    const handleStop = () => NProgress.done();
+
+    handleStop();
+
+    return () => {
+      handleStart();
+    };
+  }, [pathname]);
 
   return (
     <QueryClientProvider client={queryClient}>
-        <Suspense>
-            <ProgressBar />
-        </Suspense>
-        <Background />
-        <Navbar />
-        <main className="pt-20 min-h-screen">
-            <AnimatePresence mode="wait">
-                <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, ease: "easeOut" }}
-                >
-                    {children}
-                </motion.div>
-            </AnimatePresence>
-        </main>
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={pathname}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.3, ease: 'easeOut' }}
+        >
+          {children}
+        </motion.div>
+      </AnimatePresence>
     </QueryClientProvider>
   );
 }
