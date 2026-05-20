@@ -6,7 +6,7 @@ import { getKuroAnimeDetails, getKuroEpisodes, getKuroStream } from '@/lib/api/k
 import Player from '@/components/player/Player';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { ChevronLeft, List, Info, Share2, Download, Settings, ToggleLeft as Toggle } from 'lucide-react';
+import { ChevronLeft, List, Info, Share2, Download, Settings, ToggleLeft as Toggle, RefreshCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useHistory } from '@/hooks/useHistory';
 import DisqusComments from '@/components/layout/DisqusComments';
@@ -23,12 +23,12 @@ export default function WatchPage({ params }: { params: Promise<{ id: string; ep
   const [quality, setQuality] = useState<string | null>(null);
   const { addToHistory } = useHistory();
 
-  const { data: media } = useQuery({
+  const { data: media, isLoading: mediaLoading } = useQuery({
     queryKey: ['anime-details', id],
     queryFn: () => getKuroAnimeDetails(id),
   });
 
-  const { data: episodesData } = useQuery({
+  const { data: episodesData, isLoading: episodesLoading, error: episodesError } = useQuery({
     queryKey: ['kuro-episodes', paheId],
     queryFn: () => getKuroEpisodes(paheId!),
     enabled: !!paheId,
@@ -38,7 +38,7 @@ export default function WatchPage({ params }: { params: Promise<{ id: string; ep
     return episodesData?.find((ep: any) => ep.episode === parseFloat(currentEpisode))?.session;
   }, [episodesData, currentEpisode]);
 
-  const { data: streamData, isLoading: streamLoading } = useQuery({
+  const { data: streamData, isLoading: streamLoading, error: streamError, refetch: refetchStream } = useQuery({
     queryKey: ['kuro-stream', paheId, episodeSession, streamType],
     queryFn: () => getKuroStream(paheId!, episodeSession, streamType),
     enabled: !!paheId && !!episodeSession,
@@ -49,10 +49,10 @@ export default function WatchPage({ params }: { params: Promise<{ id: string; ep
   }, [streamData]);
 
   useEffect(() => {
-    if (sortedStreams.length > 0 && !quality) {
+    if (sortedStreams.length > 0) {
       setQuality(sortedStreams[0].url);
     }
-  }, [sortedStreams, quality]);
+  }, [sortedStreams]);
 
   const streamUrl = quality || sortedStreams[0]?.url;
 
@@ -81,24 +81,37 @@ export default function WatchPage({ params }: { params: Promise<{ id: string; ep
     }
   }, [media, currentEpisode, paheId, id, addToHistory]);
 
+  if (!paheId) {
+      return (
+          <div className="h-screen flex flex-col items-center justify-center gap-4 text-center px-6">
+              <div className="text-primary text-4xl font-black uppercase">SESSION MISSING</div>
+              <p className="text-white/40 font-bold max-w-sm">No streaming session was provided. Please go back to the details page and click Watch Now again.</p>
+              <Link href={`/anime/${id}`} className="bg-primary text-black px-8 py-3 rounded-full font-black uppercase">Back to Details</Link>
+          </div>
+      )
+  }
+
   return (
     <div className="flex flex-col gap-8 px-6 md:px-16 py-8">
       {/* Breadcrumbs */}
-      <div className="flex items-center gap-2 text-sm font-bold text-white/50">
-        <Link href="/" className="hover:text-white transition-colors">HOME</Link>
+      <div className="flex items-center gap-2 text-sm font-bold text-white/50 uppercase tracking-widest overflow-hidden">
+        <Link href="/" className="hover:text-white transition-colors shrink-0">HOME</Link>
         <span>/</span>
-        <Link href={`/anime/${id}`} className="hover:text-white transition-colors uppercase truncate max-w-[200px]">
-          {media?.title?.english || media?.title?.romaji}
+        <Link href={`/anime/${id}`} className="hover:text-white transition-colors truncate max-w-[150px] md:max-w-none">
+          {mediaLoading ? '...' : (media?.title?.english || media?.title?.romaji)}
         </Link>
         <span>/</span>
-        <span className="text-primary">EPISODE {currentEpisode}</span>
+        <span className="text-primary shrink-0">EP {currentEpisode}</span>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         <div className="lg:col-span-3 flex flex-col gap-6">
-          {streamLoading ? (
-            <div className="w-full aspect-video bg-white/5 rounded-2xl animate-pulse flex items-center justify-center">
-              <div className="text-primary/20 font-black text-3xl animate-bounce">LOADING STREAM...</div>
+          {streamLoading || episodesLoading ? (
+            <div className="w-full aspect-video bg-white/5 rounded-2xl animate-pulse flex items-center justify-center border border-white/5">
+              <div className="flex flex-col items-center gap-4">
+                  <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                  <div className="text-primary font-black text-2xl animate-pulse uppercase tracking-tighter">FETCHING STREAM...</div>
+              </div>
             </div>
           ) : streamUrl ? (
             <Player
@@ -108,17 +121,20 @@ export default function WatchPage({ params }: { params: Promise<{ id: string; ep
               onEnded={handleEpisodeEnd}
             />
           ) : (
-            <div className="w-full aspect-video bg-white/5 rounded-2xl flex items-center justify-center text-white/20 font-bold border border-white/5">
-              NO STREAM FOUND FOR THIS EPISODE
+            <div className="w-full aspect-video bg-white/5 rounded-2xl flex flex-col items-center justify-center text-white/20 font-bold border border-white/5 gap-4">
+              <div className="text-3xl font-black uppercase italic">STREAM NOT FOUND</div>
+              <button onClick={() => refetchStream()} className="bg-primary/10 hover:bg-primary/20 text-primary px-6 py-2 rounded-full border border-primary/20 transition-all font-black text-xs uppercase flex items-center gap-2">
+                  <RefreshCcw size={14} /> Retry Fetch
+              </button>
             </div>
           )}
 
           <div className="flex flex-col gap-4 bg-white/5 p-8 rounded-2xl border border-white/5">
-            <div className="flex items-center justify-between">
-              <h1 className="text-2xl font-black uppercase tracking-tight truncate">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <h1 className="text-2xl font-black uppercase tracking-tight truncate max-w-xl">
                 {media?.title?.english || media?.title?.romaji} - Episode {currentEpisode}
               </h1>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 shrink-0">
                  {/* SUB/DUB Switcher */}
                  <div className="flex items-center bg-black/40 rounded-full p-1 border border-white/5">
                    <button
@@ -143,21 +159,21 @@ export default function WatchPage({ params }: { params: Promise<{ id: string; ep
               </div>
             </div>
 
-            <div className="flex items-center justify-between mt-2">
+            <div className="flex items-center justify-between mt-2 border-t border-white/5 pt-4">
               <div className="flex items-center gap-6">
                 {/* Quality Selector */}
                 {sortedStreams.length > 0 && (
                    <select
                     value={quality || ''}
                     onChange={(e) => setQuality(e.target.value)}
-                    className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-xs font-bold focus:outline-none focus:ring-1 focus:ring-primary"
+                    className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-xs font-bold focus:outline-none focus:ring-1 focus:ring-primary appearance-none cursor-pointer hover:bg-white/10 transition-all"
                    >
                      {sortedStreams.map((s: any) => (
                        <option key={s.url} value={s.url}>{s.quality}p ({s.filesize})</option>
                      ))}
                    </select>
                 )}
-                <div className="text-white/50 font-bold text-sm">
+                <div className="text-white/50 font-bold text-sm hidden md:block">
                   {media?.seasonYear} • {media?.format}
                 </div>
               </div>
@@ -199,17 +215,19 @@ export default function WatchPage({ params }: { params: Promise<{ id: string; ep
                <h3 className="font-black uppercase tracking-tighter flex items-center gap-2">
                  <List size={18} /> Episode List
                </h3>
-               <span className="text-xs font-bold text-primary">{episodesData?.length || 0} EPS</span>
+               <span className="text-xs font-bold text-primary tracking-widest">{episodesData?.length || 0} EPS</span>
              </div>
              <div className="max-h-[600px] overflow-y-auto p-2 flex flex-col gap-1">
-               {[...(episodesData || [])].sort((a: any, b: any) => a.episode - b.episode).map((ep: any) => (
+               {episodesLoading ? (
+                   [...Array(10)].map((_, i) => <div key={i} className="h-10 bg-white/5 rounded-xl animate-pulse" />)
+               ) : (episodesData || []).sort((a: any, b: any) => a.episode - b.episode).map((ep: any) => (
                  <Link
                    key={ep.episode}
                    href={`/watch/${id}/${ep.episode}?paheId=${paheId}`}
                    className={cn(
                      "px-4 py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-between group",
                      parseFloat(currentEpisode) === ep.episode
-                        ? "bg-primary text-black sexy-shadow"
+                        ? "bg-primary text-black sexy-shadow scale-[1.02]"
                         : "hover:bg-white/5 text-white/50 hover:text-white"
                    )}
                  >
@@ -220,10 +238,12 @@ export default function WatchPage({ params }: { params: Promise<{ id: string; ep
            </div>
 
            <Link href={`/anime/${id}`} className="bg-white/5 hover:bg-white/10 p-5 rounded-2xl border border-white/5 flex items-center gap-4 transition-all">
-              <Info size={24} className="text-primary" />
+              <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
+                  <Info size={24} className="text-primary" />
+              </div>
               <div>
-                <div className="text-xs font-black text-white/40 uppercase tracking-widest">More Info</div>
-                <div className="font-bold">View Detail Page</div>
+                <div className="text-[10px] font-black text-white/40 uppercase tracking-widest">Information</div>
+                <div className="font-black uppercase tracking-tight">View Details</div>
               </div>
            </Link>
         </div>

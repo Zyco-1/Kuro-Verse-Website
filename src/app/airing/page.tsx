@@ -2,9 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { getKuroRecent } from '@/lib/api/kuroverse';
-import { motion } from 'framer-motion';
-import { Calendar, Clock, Play } from 'lucide-react';
-import Link from 'next/link';
+import { Calendar } from 'lucide-react';
 import AnimeCard from '@/components/anime/AnimeCard';
 
 export default function AiringPage() {

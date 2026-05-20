@@ -1,49 +1,47 @@
 'use client';
 
 import Link from 'next/link';
-import { Search, Play, User, Menu } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { Search, Menu, User } from 'lucide-react';
+import { useState } from 'react';
 import { cn } from '@/lib/utils';
 
 export default function Navbar() {
-  const [scrolled, setScrolled] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
 
-  useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  if (typeof window !== 'undefined') {
+    window.addEventListener('scroll', () => {
+      setIsScrolled(window.scrollY > 20);
+    });
+  }
 
   return (
-    <nav
-      className={cn(
-        'fixed top-0 w-full z-50 transition-all duration-300 px-6 py-4 flex items-center justify-between',
-        scrolled ? 'bg-[#0a0a0b]/80 backdrop-blur-md border-b border-white/5' : 'bg-transparent'
-      )}
-    >
-      <div className="flex items-center gap-8">
-        <Link href="/" className="text-2xl font-black tracking-tighter flex items-center gap-2">
-          <span className="bg-primary text-black p-1 rounded">KURO</span>
-          <span className="text-white">VERSE</span>
+    <nav className={cn(
+      "sticky top-0 z-50 w-full transition-all duration-300 px-6 md:px-16 py-4 flex items-center justify-between",
+      isScrolled ? "bg-background/80 backdrop-blur-xl border-b border-white/5 py-3" : "bg-transparent"
+    )}>
+      <div className="flex items-center gap-12">
+        <Link href="/" className="text-2xl font-black tracking-tighter text-primary italic hover:scale-105 transition-transform">
+          KURO<span className="text-white">VERSE</span>
         </Link>
-        <div className="hidden md:flex items-center gap-6 text-sm font-medium text-white/70">
-          <Link href="/" className="hover:text-primary transition-colors">Home</Link>
-          <Link href="/trending" className="hover:text-primary transition-colors">Trending</Link>
-          <Link href="/popular" className="hover:text-primary transition-colors">Popular</Link>
-          <Link href="/airing" className="hover:text-primary transition-colors">Airing</Link>
+
+        <div className="hidden md:flex items-center gap-8">
+          <Link href="/" className="text-sm font-black uppercase tracking-widest hover:text-primary transition-colors">Home</Link>
+          <Link href="/trending" className="text-sm font-black uppercase tracking-widest hover:text-primary transition-colors">Trending</Link>
+          <Link href="/popular" className="text-sm font-black uppercase tracking-widest hover:text-primary transition-colors">Popular</Link>
+          <Link href="/airing" className="text-sm font-black uppercase tracking-widest hover:text-primary transition-colors">Airing</Link>
         </div>
       </div>
 
-      <div className="flex items-center gap-4">
-        <Link href="/search" className="p-2 hover:bg-white/10 rounded-full transition-colors">
-          <Search size={20} className="text-white/70" />
+      <div className="flex items-center gap-6">
+        <Link href="/search" className="p-2 hover:bg-white/5 rounded-full transition-colors text-primary">
+          <Search size={24} strokeWidth={3} />
         </Link>
-        <button className="p-2 hover:bg-white/10 rounded-full transition-colors md:hidden">
-          <Menu size={20} className="text-white/70" />
+        <button className="p-2 hover:bg-white/5 rounded-full transition-colors md:hidden">
+          <Menu size={24} />
         </button>
-        <div className="hidden md:flex items-center gap-2 bg-white/5 border border-white/10 px-4 py-1.5 rounded-full cursor-pointer hover:bg-white/10 transition-colors">
-          <User size={16} className="text-white/70" />
-          <span className="text-xs font-semibold">Guest</span>
+        <div className="hidden md:flex items-center gap-2 bg-white/5 px-4 py-2 rounded-full border border-white/5 hover:border-primary/50 transition-all cursor-pointer group">
+          <User size={18} className="group-hover:text-primary" />
+          <span className="text-xs font-black uppercase tracking-widest">Guest</span>
         </div>
       </div>
     </nav>
