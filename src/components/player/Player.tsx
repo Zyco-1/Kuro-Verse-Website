@@ -1,6 +1,6 @@
 'use client';
 
-import { MediaPlayer, MediaProvider, Poster } from '@vidstack/react';
+import { MediaPlayer, MediaProvider, Poster, type MediaErrorEvent } from '@vidstack/react';
 import { defaultLayoutIcons, DefaultVideoLayout } from '@vidstack/react/player/layouts/default';
 import '@vidstack/react/player/styles/default/theme.css';
 import '@vidstack/react/player/styles/default/layouts/video.css';
@@ -13,12 +13,17 @@ interface PlayerProps {
 }
 
 export default function Player({ src, poster, title, onEnded }: PlayerProps) {
+  const onPlayerError = (event: MediaErrorEvent) => {
+    console.error('Vidstack Player Error:', event.detail);
+  };
+
   return (
     <div className="w-full aspect-video rounded-2xl overflow-hidden border border-white/10 sexy-shadow bg-black">
       <MediaPlayer
         title={title}
         src={src}
         onEnded={onEnded}
+        onError={onPlayerError}
         crossOrigin
         playsInline
         className="w-full h-full"
@@ -29,7 +34,6 @@ export default function Player({ src, poster, title, onEnded }: PlayerProps) {
             src={poster}
             alt={title}
           />
-          {/* Tracks like subtitles could be added here if available */}
         </MediaProvider>
         <DefaultVideoLayout
           icons={defaultLayoutIcons}

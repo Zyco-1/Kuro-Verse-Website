@@ -30,6 +30,9 @@
     "vidstack": "^1.12.12"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
+    "pixelmatch": "^7.2.0",
+    "pngjs": "^7.0.0",
     "@types/node": "^20.17.9",
     "@types/react": "^19.0.1",
     "@types/react-dom": "^19.0.1",

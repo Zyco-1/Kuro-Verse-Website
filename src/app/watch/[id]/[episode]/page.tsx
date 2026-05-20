@@ -50,10 +50,10 @@ export default function WatchPage({ params }: { params: Promise<{ id: string; ep
   }, [streamData]);
 
   useEffect(() => {
-    if (sortedStreams.length > 0) {
+    if (sortedStreams.length > 0 && !quality) {
       setQuality(sortedStreams[0].url);
     }
-  }, [sortedStreams]);
+  }, [sortedStreams, quality]);
 
   const rawStreamUrl = quality || sortedStreams[0]?.url;
   // Use our proxy for m3u8 links to handle headers and cookies
@@ -176,7 +176,7 @@ export default function WatchPage({ params }: { params: Promise<{ id: string; ep
                     className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-xs font-bold focus:outline-none focus:ring-1 focus:ring-primary appearance-none cursor-pointer hover:bg-white/10 transition-all"
                    >
                      {sortedStreams.map((s: any) => (
-                       <option key={s.url} value={s.url}>{s.quality}p ({s.filesize})</option>
+                       <option key={s.url} value={s.url}>{s.qualityLabel || `${s.quality}p (${s.filesize})`}</option>
                      ))}
                    </select>
                 )}

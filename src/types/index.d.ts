@@ -36,6 +36,8 @@ export interface Stream {
   quality: string;
   url: string;
   filesize: string;
+  qualityLabel?: string;
+  dub?: boolean;
 }
 
 export interface WatchedAnime {
