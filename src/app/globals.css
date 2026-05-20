@@ -1,9 +1,6 @@
-@import "tailwindcss";
-
-@theme {
-  --color-primary: #a3e635;
-  --color-accent: #facc15;
-}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
   --background: #000000;
@@ -38,4 +35,12 @@ body {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #a3e635;
+}
+
+#nprogress .bar {
+  background: #a3e635 !important;
+}
+
+#nprogress .peg {
+  box-shadow: 0 0 10px #a3e635, 0 0 5px #a3e635 !important;
 }
