@@ -8,7 +8,10 @@ import { useQuery } from '@tanstack/react-query';
 import { getAniListMediaByTitle } from '@/lib/api/anilist';
 
 export default function AnimeCard({ anime }: { anime: any }) {
-  const isKuroOnly = !anime?.id && (anime?.session || anime?.episode);
+  // Fetch metadata if it's a Kuro-only object OR if it lacks critical metadata (rating/format)
+  // This ensures recent releases (which have partial data) get full AniList metadata
+  const isKuroOnly = (!anime?.id && (anime?.session || anime?.episode)) ||
+                     (anime?.id && (!anime?.averageScore && !anime?.format));
 
   // Extract title correctly whether it's an object or a string
   const kuroTitle = typeof anime?.title === 'string'

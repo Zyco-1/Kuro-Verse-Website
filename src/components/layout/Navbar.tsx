@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { Search, Menu, User, LogOut, LogIn, X, Mail, Lock, Sparkles } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
@@ -76,8 +77,15 @@ export default function Navbar() {
       isScrolled ? "bg-background/80 backdrop-blur-xl border-b border-white/5 py-3" : "bg-transparent"
     )}>
       <div className="flex items-center gap-12">
-        <Link href="/" className="text-2xl font-black tracking-tighter text-primary italic hover:scale-105 transition-transform">
-          KURO<span className="text-white">VERSE</span>
+        <Link href="/" className="hover:scale-105 transition-transform">
+          <Image
+            src="/logo.png"
+            alt="KuroVerse"
+            width={180}
+            height={40}
+            className="h-8 md:h-10 w-auto object-contain"
+            priority
+          />
         </Link>
 
         <div className="hidden md:flex items-center gap-8">

@@ -29,6 +29,9 @@ export default function Home() {
   const popularAnimes = popular || [];
   const featured = trendingAnimes[0];
 
+  // Deduplicate recent releases by anime title/session
+  const deduplicatedRecent = recent ? Array.from(new Map(recent.map((item: any) => [item.session, item])).values()) : [];
+
   return (
     <div className="flex flex-col gap-16 pb-20">
       {/* Hero Section */}
@@ -90,7 +93,7 @@ export default function Home() {
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
           {recentLoading
             ? [...Array(6)].map((_, i) => <div key={i} className="aspect-[3/4] bg-white/5 rounded-2xl animate-pulse" />)
-            : recent?.slice(0, 12).map((item: any, idx: number) => (
+            : deduplicatedRecent.slice(0, 12).map((item: any, idx: number) => (
                 <AnimeCard key={idx} anime={item.media ? { ...item.media, episode: item.episode } : item} />
             ))}
         </div>

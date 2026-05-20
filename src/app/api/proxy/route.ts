@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
   if (url.includes('animepahe')) {
     referer = 'https://animepahe.ru/';
     origin = 'https://animepahe.ru';
-  } else if (url.includes('uwucdn.top') || url.includes('kwik.cx')) {
+  } else if (url.includes('uwucdn.top') || url.includes('owocdn.top') || url.includes('kwik.cx')) {
     referer = 'https://kwik.cx/';
     origin = 'https://kwik.cx';
   }
