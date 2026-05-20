@@ -90,29 +90,34 @@ export async function GET(request: NextRequest) {
     }
 
     if ((typeof contentType === 'string' && (contentType.includes('mpegurl') || contentType.includes('application/vnd.apple.mpegurl'))) || url.includes('.m3u8')) {
-      const text = Buffer.from(data).toString('utf-8');
-      const baseUrl = url.substring(0, url.lastIndexOf('/') + 1);
+      let text = Buffer.from(data).toString('utf-8');
+      const baseUrl = new URL('.', url).href;
 
-      const lines = text.split(/[\r\n]+/).map(line => {
-        const trimmedLine = line.trim();
-        if (trimmedLine === '') return '';
-
-        if (trimmedLine.startsWith('#')) {
-          return trimmedLine.replace(/URI="([^"]+)"/g, (match, p1) => {
-            if (!p1 || p1.startsWith('/api/proxy') || p1.startsWith('data:')) return match;
-            const absoluteUrl = p1.startsWith('http') ? p1 : new URL(p1, baseUrl).href;
-            return `URI="/api/proxy?url=${encodeURIComponent(absoluteUrl)}"`;
-          });
-        }
-
-        if (trimmedLine.length > 0 && !trimmedLine.startsWith('/api/proxy') && !trimmedLine.startsWith('data:')) {
-            const absoluteUrl = trimmedLine.startsWith('http') ? trimmedLine : new URL(trimmedLine, baseUrl).href;
-            return `/api/proxy?url=${encodeURIComponent(absoluteUrl)}`;
-        }
-        return trimmedLine;
+      // 1. Rewrite URI attributes (Keys, Maps, etc.)
+      text = text.replace(/URI="([^"]+)"/g, (match, p1) => {
+        if (!p1 || p1.startsWith('/api/proxy') || p1.startsWith('data:')) return match;
+        const absoluteUrl = p1.startsWith('http') ? p1 : new URL(p1, baseUrl).href;
+        return `URI="/api/proxy?url=${encodeURIComponent(absoluteUrl)}"`;
       });
 
-      data = Buffer.from(lines.filter(l => l !== '').join('\n'));
+      // 2. Rewrite Segments (lines not starting with #)
+      const lines = text.split(/\r?\n/).map(line => {
+        const trimmed = line.trim();
+        if (trimmed && !trimmed.startsWith('#') && !trimmed.startsWith('/api/proxy') && !trimmed.startsWith('data:')) {
+          const absoluteUrl = trimmed.startsWith('http') ? trimmed : new URL(trimmed, baseUrl).href;
+          return `/api/proxy?url=${encodeURIComponent(absoluteUrl)}`;
+        }
+        return line;
+      });
+
+      text = lines.join('\n');
+
+      // 3. Add ENDLIST if missing (improves compatibility)
+      if (!text.includes('#EXT-X-ENDLIST')) {
+        text = text.trim() + '\n#EXT-X-ENDLIST\n';
+      }
+
+      data = Buffer.from(text);
       contentType = 'application/vnd.apple.mpegurl';
     }
 
