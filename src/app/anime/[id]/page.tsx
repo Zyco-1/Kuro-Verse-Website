@@ -169,7 +169,7 @@ export default function AnimeDetailsPage({
                 >
                     <div className="aspect-video relative overflow-hidden">
                         <Image
-                            src={thumbnails[ep] ? thumbnails[ep] : media?.bannerImage || media?.coverImage?.large}
+                            src={thumbnails[ep] ? `/api/proxy?url=${encodeURIComponent(thumbnails[ep])}` : media?.bannerImage || media?.coverImage?.large}
                             alt={`Episode ${ep}`}
                             fill
                             className="object-cover transition-transform group-hover:scale-110"
