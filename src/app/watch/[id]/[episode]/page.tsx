@@ -50,7 +50,7 @@ export default function WatchPage({ params }: { params: Promise<{ id: string; ep
     async function handleExtraction() {
       if (serversData && Array.isArray(serversData)) {
         const filtered = serversData.filter((s: any) =>
-          streamType === 'dub' ? s.dataType === 'Dubbed' : s.dataType === 'Original'
+          s.dataType === streamType
         );
         const server = filtered.find((s: any) => s.dataLink.includes('flixcloud.cc')) || filtered[0];
 

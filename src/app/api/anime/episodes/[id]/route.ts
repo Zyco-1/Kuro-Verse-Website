@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import axios from 'axios';
 
 const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
@@ -10,7 +9,7 @@ export async function GET(
   const { id } = await params;
 
   try {
-    const response = await axios.get(`https://reanime.to/api/thumbnails/${id}`, {
+    const response = await fetch(`https://reanime.to/api/thumbnails/${id}`, {
         headers: {
             'User-Agent': USER_AGENT,
             'Referer': 'https://reanime.to/',
@@ -18,13 +17,19 @@ export async function GET(
         }
     });
 
-    if (response.data.success && response.data.thumbnails) {
-      // Map thumbnails object to a sorted episode list
-      const episodes = Object.keys(response.data.thumbnails)
+    if (!response.ok) {
+        console.error(`reanime.to returned ${response.status} for thumbnails ${id}`);
+        return NextResponse.json({ error: `Provider error: ${response.status}` }, { status: response.status });
+    }
+
+    const data = await response.json();
+
+    if (data.success && data.thumbnails) {
+      const episodes = Object.keys(data.thumbnails)
         .sort((a, b) => parseFloat(a) - parseFloat(b))
         .map(epNum => ({
           episode: epNum,
-          thumbnail: response.data.thumbnails[epNum]
+          thumbnail: data.thumbnails[epNum]
         }));
 
       return NextResponse.json(episodes);
@@ -33,6 +38,6 @@ export async function GET(
     return NextResponse.json([], { status: 404 });
   } catch (error: any) {
     console.error('Failed to fetch episodes:', error.message);
-    return NextResponse.json({ error: 'Failed to fetch episodes' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
