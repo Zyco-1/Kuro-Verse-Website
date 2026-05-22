@@ -1,4 +1,4 @@
-const KURO_API_BASE = 'https://kuro-api.vercel.app';
+const KURO_API_BASE = 'https://kuro-api-c0q2.onrender.com';
 
 export const searchKuro = async (query: string) => {
   const res = await fetch(`${KURO_API_BASE}/api/search?query=${encodeURIComponent(query)}`);
