@@ -4,42 +4,20 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Play, Star } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useQuery } from '@tanstack/react-query';
-import { getAniListMediaByTitle } from '@/lib/api/anilist';
 
 export default function AnimeCard({ anime }: { anime: any }) {
-  // Fetch metadata if it's a Kuro-only object OR if it lacks critical metadata (rating/format)
-  // This ensures recent releases (which have partial data) get full AniList metadata
-  const isKuroOnly = (!anime?.id && (anime?.session || anime?.episode)) ||
-                     (anime?.id && (!anime?.averageScore && !anime?.format));
+  const title = typeof anime?.title === 'object'
+    ? (anime?.title?.english || anime?.title?.romaji || anime?.title?.native)
+    : (anime?.title || 'Unknown');
 
-  // Extract title correctly whether it's an object or a string
-  const kuroTitle = typeof anime?.title === 'string'
-    ? anime.title
-    : (anime?.title?.romaji || anime?.title?.english || anime?.title?.native || 'Unknown');
+  const image = anime?.coverImage?.extraLarge || anime?.coverImage?.large || anime?.poster || anime?.image || '/placeholder.png';
 
-  const { data: aniListData, isLoading: isMetadataLoading } = useQuery({
-    queryKey: ['anilist-metadata', kuroTitle],
-    queryFn: () => getAniListMediaByTitle(kuroTitle),
-    enabled: isKuroOnly && kuroTitle !== 'Unknown',
-    staleTime: 1000 * 60 * 60, // 1 hour
-  });
-
-  const displayAnime = aniListData || anime;
-
-  const title = typeof displayAnime?.title === 'object'
-    ? (displayAnime?.title?.english || displayAnime?.title?.romaji || displayAnime?.title?.native)
-    : (displayAnime?.title || kuroTitle);
-
-  const image = displayAnime?.coverImage?.large || displayAnime?.coverImage?.extraLarge || anime?.poster || anime?.image || '/placeholder.png';
-
-  const rawRating = displayAnime?.averageScore || displayAnime?.score;
+  const rawRating = anime?.averageScore || anime?.score;
   const rating = typeof rawRating === 'number'
     ? (rawRating > 10 ? (rawRating / 10).toFixed(1) : rawRating.toFixed(1))
     : 'N/A';
 
-  const id = displayAnime?.id;
-  const session = anime?.session;
+  const id = anime?.id;
 
   return (
     <motion.div
@@ -47,7 +25,7 @@ export default function AnimeCard({ anime }: { anime: any }) {
       className="group relative flex flex-col gap-3"
     >
       <Link
-        href={id ? `/anime/${id}` : (session ? `/anime/pahe-${session}?title=${encodeURIComponent(title || '')}` : '#')}
+        href={id ? `/anime/${id}` : '#'}
         className="aspect-[3/4] relative rounded-2xl overflow-hidden sexy-shadow block bg-white/5"
       >
         <Image
@@ -65,7 +43,7 @@ export default function AnimeCard({ anime }: { anime: any }) {
         <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/10">
           <Star size={12} className="text-accent fill-accent" />
           <span className="text-[10px] font-black">
-              {isMetadataLoading && isKuroOnly ? '...' : rating}
+              {rating}
           </span>
         </div>
         {anime?.episode !== undefined && (
@@ -80,8 +58,8 @@ export default function AnimeCard({ anime }: { anime: any }) {
           {title}
         </h3>
         <div className="flex items-center justify-between text-[10px] font-bold text-white/40 uppercase tracking-widest">
-           <span>{displayAnime?.format || displayAnime?.type || 'TV'}</span>
-           <span>{displayAnime?.seasonYear || displayAnime?.year || ''}</span>
+           <span>{anime?.format || anime?.type || 'TV'}</span>
+           <span>{anime?.seasonYear || anime?.year || ''}</span>
         </div>
       </div>
     </motion.div>

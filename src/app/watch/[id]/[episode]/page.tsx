@@ -1,120 +1,67 @@
 'use client';
 
 import { use, useState, useEffect, useCallback, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { getAniListMedia } from '@/lib/api/anilist';
-import { getReAnimeThumbnails, getReAnimeServers } from '@/lib/api/reanime';
-import ArtPlayer from '@/components/player/ArtPlayer';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { List, Info, RefreshCcw, Sparkles } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { useHistory } from '@/hooks/useHistory';
+import { useQuery } from '@tanstack/react-query';
+import { getKuroAnimeDetails, getKuroStream } from '@/lib/api/kuro';
+import Link from 'next/link';
+import { List, Info, Sparkles, RefreshCcw } from 'lucide-react';
+import ArtPlayer from '@/components/player/ArtPlayer';
 import DisqusComments from '@/components/layout/DisqusComments';
+import { useHistory } from '@/hooks/useHistory';
+import { cn } from '@/lib/utils';
 
-export default function WatchPage({ params }: { params: Promise<{ id: string; episode: string }> }) {
-  const { id, episode } = use(params);
+export default function WatchPage({
+  params,
+}: {
+  params: Promise<{ id: string, episode: string }>
+}) {
+  const { id, episode: currentEpisode } = use(params);
   const router = useRouter();
-
-  const currentEpisode = episode;
-  const [streamInfo, setStreamInfo] = useState<{ url: string; subtitles: any[] } | null>(null);
-  const [isExtracting, setIsExtracting] = useState(false);
-  const [streamType, setStreamType] = useState<'sub' | 'dub'>('sub');
   const { addToHistory } = useHistory();
+  const [streamType, setStreamType] = useState<'sub' | 'dub'>('sub');
 
-  const { data: media, isLoading: mediaLoading } = useQuery({
-    queryKey: ['anime-details-anilist', id],
-    queryFn: () => getAniListMedia(id),
+  const { data: detailsData, isLoading: detailsLoading } = useQuery({
+    queryKey: ['anime-details-kuro', id],
+    queryFn: () => getKuroAnimeDetails(id),
   });
 
-  const { data: reAnimeData, isLoading: episodesLoading } = useQuery({
-    queryKey: ['anime-episodes', id],
-    queryFn: () => getReAnimeThumbnails(id),
-    enabled: !!id,
+  const { data: streamData, isLoading: streamLoading, refetch: refetchStream } = useQuery({
+    queryKey: ['anime-stream-kuro', id, currentEpisode, streamType],
+    queryFn: () => getKuroStream(id, currentEpisode, streamType),
   });
 
-  const episodesData = useMemo(() => {
-    if (!reAnimeData) return [];
-    return Object.keys(reAnimeData)
-        .sort((a, b) => parseFloat(a) - parseFloat(b))
-        .map(epNum => ({
-            episode: epNum,
-            thumbnail: (reAnimeData as any)[epNum]
-        }));
-  }, [reAnimeData]);
-
-  const { data: serversData, isLoading: serversLoading, refetch: refetchServers } = useQuery({
-    queryKey: ['anime-servers', id, currentEpisode],
-    queryFn: () => getReAnimeServers(id, currentEpisode),
-    enabled: !!id && !!currentEpisode,
-  });
-
-  useEffect(() => {
-    async function handleExtraction() {
-      if (serversData && Array.isArray(serversData)) {
-        const filtered = serversData.filter((s: any) =>
-          s.dataType === streamType
-        );
-        const server = filtered.find((s: any) => s.dataLink.includes('flixcloud.cc')) || filtered[0];
-
-        if (server) {
-          if (server.dataLink.includes('flixcloud.cc')) {
-            setIsExtracting(true);
-            try {
-              const res = await fetch(`/api/flix/extract?url=${encodeURIComponent(server.dataLink)}`);
-              const data = await res.json();
-              if (data.videoUrl) {
-                setStreamInfo({ url: data.videoUrl, subtitles: data.subtitles || [] });
-              } else {
-                setStreamInfo(null);
-              }
-            } catch (err) {
-              console.error('Extraction failed', err);
-              setStreamInfo(null);
-            } finally {
-              setIsExtracting(false);
-            }
-          } else {
-            setStreamInfo({ url: server.dataLink, subtitles: [] });
-          }
-        } else {
-          setStreamInfo(null);
-        }
-      }
-    }
-    handleExtraction();
-  }, [serversData, streamType]);
-
-  const streamUrl = streamInfo?.url ? `/api/proxy?url=${encodeURIComponent(streamInfo.url)}` : null;
-
-  const handleEpisodeEnd = useCallback(() => {
-    if (!episodesData) return;
-
-    const currentIndex = episodesData.findIndex((ep: any) => parseFloat(ep.episode) === parseFloat(currentEpisode));
-
-    if (currentIndex !== -1 && currentIndex < episodesData.length - 1) {
-      const nextEp = episodesData[currentIndex + 1];
-      router.push(`/watch/${id}/${nextEp.episode}`);
-    }
-  }, [episodesData, currentEpisode, id, router]);
+  const media = detailsData?.anime;
+  const episodes = detailsData?.episodes;
 
   useEffect(() => {
     if (media) {
       addToHistory({
         id: parseInt(id),
         episode: parseFloat(currentEpisode),
-        title: media.title?.english || media.title?.romaji || media.title || 'Unknown Anime',
-        image: media.coverImage?.large || media.coverImage?.medium || media?.bannerImage,
+        title: media.title?.english || media.title?.romaji || 'Unknown Anime',
+        image: media.coverImage?.large || media.coverImage?.extraLarge || media?.bannerImage,
         updatedAt: Date.now()
       });
     }
   }, [media, currentEpisode, id, addToHistory]);
 
+  const handleEpisodeEnd = useCallback(() => {
+    if (!episodes) return;
+    const currentIndex = episodes.indexOf(currentEpisode);
+    if (currentIndex !== -1 && currentIndex < episodes.length - 1) {
+      router.push(`/watch/${id}/${episodes[currentIndex + 1]}`);
+    }
+  }, [episodes, currentEpisode, id, router]);
+
   const disqusConfig = useMemo(() => ({
     url: typeof window !== 'undefined' ? window.location.origin + window.location.pathname : '',
     identifier: `anime-${id}`,
-    title: media?.title?.english || media?.title?.romaji || media?.title || 'Anime'
+    title: media?.title?.english || media?.title?.romaji || 'Anime'
   }), [id, media]);
+
+  const videoUrl = streamData?.stream?.video_url;
+  const subtitles = streamData?.stream?.subtitles || [];
 
   return (
     <div className="flex flex-col gap-8 px-6 md:px-16 py-8">
@@ -122,7 +69,7 @@ export default function WatchPage({ params }: { params: Promise<{ id: string; ep
         <Link href="/" className="hover:text-white transition-colors shrink-0">HOME</Link>
         <span>/</span>
         <Link href={`/anime/${id}`} className="hover:text-white transition-colors truncate max-w-[150px] md:max-w-none">
-          {mediaLoading ? '...' : (media?.title?.english || media?.title?.romaji || media?.title || 'Anime')}
+          {detailsLoading ? '...' : (media?.title?.english || media?.title?.romaji || 'Anime')}
         </Link>
         <span>/</span>
         <span className="text-primary shrink-0">EP {currentEpisode}</span>
@@ -130,23 +77,23 @@ export default function WatchPage({ params }: { params: Promise<{ id: string; ep
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         <div className="lg:col-span-3 flex flex-col gap-6">
-          {serversLoading || episodesLoading || isExtracting ? (
+          {streamLoading || detailsLoading ? (
             <div className="w-full aspect-video bg-white/5 rounded-2xl animate-pulse flex items-center justify-center border border-white/5 relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/5 to-transparent animate-shimmer" />
                 <div className="flex flex-col items-center gap-4 z-10">
                     <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin" />
                     <div className="text-primary font-black text-2xl uppercase tracking-tighter text-glow">
-                        {isExtracting ? 'Decrypting Stream...' : 'Loading Media...'}
+                        Loading Stream...
                     </div>
                 </div>
             </div>
-          ) : streamUrl ? (
+          ) : videoUrl ? (
             <ArtPlayer
-              key={streamUrl}
-              src={streamUrl}
+              key={videoUrl}
+              src={videoUrl}
               poster={media?.bannerImage || media?.coverImage?.large}
               title={`${media?.title?.english || media?.title?.romaji} - Episode ${currentEpisode}`}
-              subtitles={streamInfo?.subtitles}
+              subtitles={subtitles}
               audioPreference={streamType}
               onEnded={handleEpisodeEnd}
             />
@@ -154,7 +101,7 @@ export default function WatchPage({ params }: { params: Promise<{ id: string; ep
             <div className="w-full aspect-video bg-white/5 rounded-2xl flex flex-col items-center justify-center text-white/20 font-bold border border-white/5 gap-4">
               <div className="text-4xl font-black uppercase italic tracking-tighter text-primary">COMING SOON</div>
               <p className="text-xs uppercase tracking-widest text-white/40 font-black">This episode or server is not available yet.</p>
-              <button onClick={() => refetchServers()} className="bg-primary/10 hover:bg-primary/20 text-primary px-8 py-3 rounded-full border border-primary/20 transition-all font-black text-xs uppercase flex items-center gap-2 mt-4 hover:scale-105">
+              <button onClick={() => refetchStream()} className="bg-primary/10 hover:bg-primary/20 text-primary px-8 py-3 rounded-full border border-primary/20 transition-all font-black text-xs uppercase flex items-center gap-2 mt-4 hover:scale-105">
                   <RefreshCcw size={16} /> Force Reload
               </button>
             </div>
@@ -206,24 +153,24 @@ export default function WatchPage({ params }: { params: Promise<{ id: string; ep
                <h3 className="font-black uppercase tracking-tighter flex items-center gap-2 text-primary">
                  <List size={20} /> Episode List
                </h3>
-               <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">{episodesData?.length || 0} EPS</span>
+               <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">{`${episodes?.length || 0} EPS`}</span>
              </div>
              <div className="max-h-[600px] overflow-y-auto p-3 flex flex-col gap-2 custom-scrollbar">
-               {episodesLoading ? (
+               {detailsLoading ? (
                    [...Array(10)].map((_, i) => <div key={i} className="h-12 bg-white/5 rounded-xl animate-pulse" />)
-               ) : (episodesData || []).map((ep: any) => (
+               ) : (episodes || []).map((ep: string) => (
                  <Link
-                   key={ep.episode}
-                   href={`/watch/${id}/${ep.episode}`}
+                   key={ep}
+                   href={`/watch/${id}/${ep}`}
                    className={cn(
                      "px-5 py-4 rounded-xl font-black text-xs transition-all flex items-center justify-between group relative overflow-hidden",
-                     parseFloat(currentEpisode) === parseFloat(ep.episode)
+                     currentEpisode === ep
                         ? "bg-primary text-black sexy-shadow translate-x-1"
                         : "hover:bg-white/5 text-white/50 hover:text-white hover:translate-x-1"
                    )}
                  >
-                   <span className="relative z-10 uppercase tracking-widest">Episode {ep.episode}</span>
-                   {parseFloat(currentEpisode) === parseFloat(ep.episode) && <Sparkles size={14} className="relative z-10" />}
+                   <span className="relative z-10 uppercase tracking-widest">Episode {ep}</span>
+                   {currentEpisode === ep && <Sparkles size={14} className="relative z-10" />}
                  </Link>
                ))}
              </div>
