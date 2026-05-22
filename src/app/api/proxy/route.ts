@@ -11,16 +11,10 @@ export async function GET(request: NextRequest) {
   }
 
   // Determine appropriate referer/origin
-  let referer = 'https://kwik.cx/';
-  let origin = 'https://kwik.cx';
+  let referer = 'https://reanime.to/';
+  let origin = 'https://reanime.to';
 
-  if (url.includes('animepahe')) {
-    referer = 'https://animepahe.ru/';
-    origin = 'https://animepahe.ru';
-  } else if (url.includes('uwucdn.top') || url.includes('owocdn.top') || url.includes('kwik.cx')) {
-    referer = 'https://kwik.cx/';
-    origin = 'https://kwik.cx';
-  } else if (url.includes('flixcloud.cc')) {
+  if (url.includes('flixcloud.cc')) {
     referer = 'https://flixcloud.cc/';
     origin = 'https://flixcloud.cc';
   } else if (url.includes('reanime.to')) {
@@ -54,7 +48,7 @@ export async function GET(request: NextRequest) {
     const contentType = response.headers['content-type'] as string;
     let data = response.data;
 
-    // Process HLS playlists
+    // Process HLS playlists if necessary
     if ((contentType && (contentType.includes('mpegurl') || contentType.includes('application/vnd.apple.mpegurl'))) || url.includes('.m3u8')) {
       const text = Buffer.from(data).toString('utf-8');
       const baseUrl = url.substring(0, url.lastIndexOf('/') + 1);
@@ -84,7 +78,7 @@ export async function GET(request: NextRequest) {
         headers.set('Content-Range', response.headers['content-range'] as string);
     }
 
-    // High performance caching for segments
+    // Caching logic
     if (url.includes('.m3u8') || url.includes('.key') || url.includes('mon.key')) {
       headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
     } else {

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { searchAniList } from '@/lib/api/anilist';
+import { searchKuro } from '@/lib/api/kuro';
 import { Search as SearchIcon, Loader2 } from 'lucide-react';
 import AnimeCard from '@/components/anime/AnimeCard';
 
@@ -16,8 +16,8 @@ export default function SearchPage() {
   }, [query]);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['search-anilist', debouncedQuery],
-    queryFn: () => searchAniList(debouncedQuery),
+    queryKey: ['search-kuro', debouncedQuery],
+    queryFn: () => searchKuro(debouncedQuery),
     enabled: debouncedQuery.length > 2,
   });
 
@@ -43,9 +43,9 @@ export default function SearchPage() {
       </div>
 
       <div className="w-full">
-        {data?.Page?.media?.length > 0 ? (
+        {data?.length > 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
-            {data.Page.media.map((anime: any) => (
+            {data.map((anime: any) => (
               <AnimeCard key={anime.id} anime={anime} />
             ))}
           </div>
