@@ -14,3 +14,114 @@ npm warn Unknown project config "npm-install-checks". This will stop working in 
  ✓ Compiled /watch/[id]/[episode] in 11.8s (1850 modules)
  ✓ Compiled in 1477ms (865 modules)
  GET /watch/1/1?paheId=test 200 in 16108ms
+ ⨯ ./src/lib/api/kuroverse.ts
+Error: Failed to read source code from /app/src/lib/api/kuroverse.ts
+
+Caused by:
+    No such file or directory (os error 2)
+
+Import trace for requested module:
+./src/lib/api/kuroverse.ts
+./src/app/watch/[id]/[episode]/page.tsx
+ ⨯ ./src/lib/api/kuroverse.ts
+Error: Failed to read source code from /app/src/lib/api/kuroverse.ts
+
+Caused by:
+    No such file or directory (os error 2)
+
+Import trace for requested module:
+./src/lib/api/kuroverse.ts
+./src/app/watch/[id]/[episode]/page.tsx
+ ⨯ ./src/lib/api/kuroverse.ts
+Error: Failed to read source code from /app/src/lib/api/kuroverse.ts
+
+Caused by:
+    No such file or directory (os error 2)
+
+Import trace for requested module:
+./src/lib/api/kuroverse.ts
+./src/app/watch/[id]/[episode]/page.tsx
+ ⨯ ./src/lib/api/kuroverse.ts
+Error: Failed to read source code from /app/src/lib/api/kuroverse.ts
+
+Caused by:
+    No such file or directory (os error 2)
+
+Import trace for requested module:
+./src/lib/api/kuroverse.ts
+./src/app/watch/[id]/[episode]/page.tsx
+ ⨯ ./src/lib/api/kuroverse.ts
+Error: Failed to read source code from /app/src/lib/api/kuroverse.ts
+
+Caused by:
+    No such file or directory (os error 2)
+
+Import trace for requested module:
+./src/lib/api/kuroverse.ts
+./src/app/watch/[id]/[episode]/page.tsx
+ ⨯ ./src/lib/api/kuroverse.ts
+Error: Failed to read source code from /app/src/lib/api/kuroverse.ts
+
+Caused by:
+    No such file or directory (os error 2)
+
+Import trace for requested module:
+./src/lib/api/kuroverse.ts
+./src/app/watch/[id]/[episode]/page.tsx
+ ⨯ ./src/lib/api/kuroverse.ts
+Error: Failed to read source code from /app/src/lib/api/kuroverse.ts
+
+Caused by:
+    No such file or directory (os error 2)
+
+Import trace for requested module:
+./src/lib/api/kuroverse.ts
+./src/app/watch/[id]/[episode]/page.tsx
+ ⨯ ./src/lib/api/kuroverse.ts
+Error: Failed to read source code from /app/src/lib/api/kuroverse.ts
+
+Caused by:
+    No such file or directory (os error 2)
+
+Import trace for requested module:
+./src/lib/api/kuroverse.ts
+./src/app/watch/[id]/[episode]/page.tsx
+ ⨯ ./src/components/player/Player.tsx
+Error: Failed to read source code from /app/src/components/player/Player.tsx
+
+Caused by:
+    No such file or directory (os error 2)
+
+Import trace for requested module:
+./src/components/player/Player.tsx
+./src/app/watch/[id]/[episode]/page.tsx
+ ⨯ ./src/components/player/Player.tsx
+Error: Failed to read source code from /app/src/components/player/Player.tsx
+
+Caused by:
+    No such file or directory (os error 2)
+
+Import trace for requested module:
+./src/components/player/Player.tsx
+./src/app/watch/[id]/[episode]/page.tsx
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/app/.next/cache/webpack/client-development/0.pack.gz_' -> '/app/.next/cache/webpack/client-development/0.pack.gz'
+ ✓ Compiled in 3.9s (1747 modules)
+ ✓ Compiled in 270ms (820 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/app/.next/cache/webpack/client-development/0.pack.gz_' -> '/app/.next/cache/webpack/client-development/0.pack.gz'
+ ✓ Compiled in 493ms (820 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/app/.next/cache/webpack/client-development/0.pack.gz_' -> '/app/.next/cache/webpack/client-development/0.pack.gz'
+ ✓ Compiled in 427ms (820 modules)
+ ✓ Compiled in 1140ms (1747 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/app/.next/cache/webpack/client-development/0.pack.gz_' -> '/app/.next/cache/webpack/client-development/0.pack.gz'
+ ✓ Compiled in 674ms (1733 modules)
+ ✓ Compiled in 930ms (1747 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/app/.next/cache/webpack/client-development/0.pack.gz_' -> '/app/.next/cache/webpack/client-development/0.pack.gz'
+ ✓ Compiled in 843ms (1747 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/app/.next/cache/webpack/client-development/0.pack.gz_' -> '/app/.next/cache/webpack/client-development/0.pack.gz'
+ ✓ Compiled in 801ms (1747 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/app/.next/cache/webpack/client-development/0.pack.gz_' -> '/app/.next/cache/webpack/client-development/0.pack.gz'
+ ✓ Compiled in 829ms (1747 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/app/.next/cache/webpack/client-development/0.pack.gz_' -> '/app/.next/cache/webpack/client-development/0.pack.gz'
+ ✓ Compiled in 1739ms (820 modules)
+ ✓ Compiled in 427ms (820 modules)
+[?25h

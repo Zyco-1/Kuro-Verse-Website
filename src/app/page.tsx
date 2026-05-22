@@ -1,11 +1,10 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { getKuroRecent } from '@/lib/api/kuroverse';
 import { getTrending, getPopular } from '@/lib/api/anilist';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Play, TrendingUp, Sparkles, Clock, ChevronRight } from 'lucide-react';
+import { Play, TrendingUp, Sparkles, ChevronRight } from 'lucide-react';
 import AnimeCard from '@/components/anime/AnimeCard';
 import { cn } from '@/lib/utils';
 
@@ -20,17 +19,9 @@ export default function Home() {
     queryFn: () => getPopular(1, 12),
   });
 
-  const { data: recent, isLoading: recentLoading } = useQuery({
-    queryKey: ['recent-kuro'],
-    queryFn: getKuroRecent,
-  });
-
   const trendingAnimes = trending || [];
   const popularAnimes = popular || [];
   const featured = trendingAnimes[0];
-
-  // Deduplicate recent releases by anime title/session
-  const deduplicatedRecent = recent ? Array.from(new Map(recent.map((item: any) => [item.session, item])).values()) : [];
 
   return (
     <div className="flex flex-col gap-16 pb-20">
@@ -76,28 +67,6 @@ export default function Home() {
         )}
       </section>
 
-      {/* Recent Releases */}
-      <section className="px-6 md:px-16 flex flex-col gap-8">
-        <div className="flex items-center justify-between">
-          <div className="flex flex-col gap-1">
-            <h2 className="text-3xl font-black uppercase tracking-tight flex items-center gap-3">
-              <Clock className="text-primary" /> Recent Releases
-            </h2>
-            <div className="h-1 w-20 bg-primary rounded-full" />
-          </div>
-          <Link href="/airing" className="group flex items-center gap-2 text-xs font-black uppercase tracking-widest text-white/40 hover:text-white transition-colors">
-            View All <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
-          </Link>
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
-          {recentLoading
-            ? [...Array(6)].map((_, i) => <div key={i} className="aspect-[3/4] bg-white/5 rounded-2xl animate-pulse" />)
-            : deduplicatedRecent.slice(0, 12).map((item: any, idx: number) => (
-                <AnimeCard key={idx} anime={item.media ? { ...item.media, episode: item.episode } : item} />
-            ))}
-        </div>
-      </section>
 
       {/* Trending Section */}
       <section className="px-6 md:px-16 flex flex-col gap-8">

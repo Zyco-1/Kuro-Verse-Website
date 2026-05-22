@@ -22,3 +22,34 @@ npm warn Unknown project config "npm-install-checks". This will stop working in 
  ✓ Compiled in 534ms (817 modules)
  ✓ Compiled in 481ms (817 modules)
  ✓ Compiled in 410ms (817 modules)
+ ⨯ ./src/lib/api/kuroverse.ts
+Error: Failed to read source code from /app/src/lib/api/kuroverse.ts
+
+Caused by:
+    No such file or directory (os error 2)
+
+Import trace for requested module:
+./src/lib/api/kuroverse.ts
+./src/app/page.tsx
+ ✓ Compiled in 10.6s (815 modules)
+ ✓ Compiled in 546ms (815 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/app/.next/cache/webpack/client-development/9.pack.gz_' -> '/app/.next/cache/webpack/client-development/9.pack.gz'
+ ✓ Compiled in 1293ms (801 modules)
+ ✓ Compiled in 541ms (801 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/app/.next/cache/webpack/client-development/0.pack.gz_' -> '/app/.next/cache/webpack/client-development/0.pack.gz'
+ ✓ Compiled in 624ms (815 modules)
+ ✓ Compiled in 957ms (815 modules)
+ ✓ Compiled in 813ms (815 modules)
+ ✓ Compiled in 593ms (815 modules)
+ ✓ Compiled in 327ms (815 modules)
+ ✓ Compiled in 438ms (815 modules)
+ ✓ Compiled in 434ms (815 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/app/.next/cache/webpack/client-development/0.pack.gz_' -> '/app/.next/cache/webpack/client-development/0.pack.gz'
+ ✓ Compiled in 675ms (815 modules)
+ ✓ Compiled in 591ms (815 modules)
+ ✓ Compiled in 429ms (815 modules)
+ ✓ Compiled in 467ms (815 modules)
+ ✓ Compiled in 425ms (815 modules)
+ ✓ Compiled in 1702ms (815 modules)
+ ✓ Compiled in 1277ms (815 modules)
+[?25h

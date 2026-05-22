@@ -1,14 +1,14 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { getKuroRecent } from '@/lib/api/kuroverse';
+import { getTrending } from '@/lib/api/anilist';
 import { Calendar } from 'lucide-react';
 import AnimeCard from '@/components/anime/AnimeCard';
 
 export default function AiringPage() {
   const { data, isLoading } = useQuery({
-    queryKey: ['recent-full'],
-    queryFn: getKuroRecent,
+    queryKey: ['airing-full'],
+    queryFn: () => getTrending(1, 48), // Use trending as fallback for recent
   });
 
   return (
@@ -16,10 +16,10 @@ export default function AiringPage() {
       <div className="flex flex-col gap-2">
          <h1 className="text-4xl font-black uppercase tracking-tight flex items-center gap-3">
            <Calendar className="text-primary" size={32} />
-           Recent Releases
+           Trending Now
          </h1>
          <p className="text-white/50 font-bold uppercase tracking-widest text-sm">
-           The latest episodes updated on KuroVerse
+           What everyone is watching on KuroVerse
          </p>
       </div>
 
@@ -28,17 +28,8 @@ export default function AiringPage() {
           ? [...Array(12)].map((_, i) => (
               <div key={i} className="aspect-[3/4] bg-white/5 rounded-xl animate-pulse" />
             ))
-          : data?.reduce((acc: any[], current: any) => {
-              // Deduplicate by anime session to show only the latest episode per show
-              const session = current.media?.session || current.session;
-              if (session && !acc.find(item => (item.media?.session || item.session) === session)) {
-                acc.push(current);
-              } else if (!session) {
-                acc.push(current);
-              }
-              return acc;
-            }, []).map((item: any, idx: number) => (
-                <AnimeCard key={idx} anime={item.media ? { ...item.media, episode: item.episode } : item} />
+          : data?.map((anime: any) => (
+                <AnimeCard key={anime.id} anime={anime} />
             ))}
       </div>
     </div>

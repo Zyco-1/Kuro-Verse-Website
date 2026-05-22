@@ -20,6 +20,9 @@ export async function GET(request: NextRequest) {
   } else if (url.includes('uwucdn.top') || url.includes('owocdn.top') || url.includes('kwik.cx')) {
     referer = 'https://kwik.cx/';
     origin = 'https://kwik.cx';
+  } else if (url.includes('flixcloud.cc')) {
+    referer = 'https://flixcloud.cc/';
+    origin = 'https://flixcloud.cc';
   }
 
   try {
@@ -32,34 +35,30 @@ export async function GET(request: NextRequest) {
         'User-Agent': USER_AGENT,
         'Accept': '*/*',
         'Accept-Language': 'en-US,en;q=0.9',
+        'Range': request.headers.get('range') || '',
       },
       responseType: 'arraybuffer',
-      timeout: 15000,
-      validateStatus: () => true, // Allow any status code to handle redirects/errors manually
+      timeout: 30000,
+      validateStatus: () => true,
     });
 
-    // Handle redirects manually if axios didn't
     if (response.status >= 300 && response.status < 400 && response.headers.location) {
-      return GET(new NextRequest(new URL(`/api/proxy?url=${encodeURIComponent(response.headers.location)}`, request.url)));
-    }
-
-    if (response.status !== 200) {
-      console.error(`Upstream returned ${response.status} for ${url}`);
-      return new NextResponse(`Upstream error: ${response.status}`, { status: response.status });
+        const redirectUrl = new URL(request.url);
+        redirectUrl.searchParams.set('url', response.headers.location);
+        return NextResponse.redirect(redirectUrl);
     }
 
     const contentType = response.headers['content-type'] as string;
     let data = response.data;
 
     // Process HLS playlists
-    if ((typeof contentType === 'string' && (contentType.includes('mpegurl') || contentType.includes('application/vnd.apple.mpegurl'))) || url.includes('.m3u8')) {
+    if ((contentType && (contentType.includes('mpegurl') || contentType.includes('application/vnd.apple.mpegurl'))) || url.includes('.m3u8')) {
       const text = Buffer.from(data).toString('utf-8');
       const baseUrl = url.substring(0, url.lastIndexOf('/') + 1);
 
       const lines = text.split('\n').map(line => {
         if (line.trim() === '') return line;
 
-        // Handle URIs in tags like #EXT-X-KEY:METHOD=AES-128,URI="mon.key"
         if (line.startsWith('#')) {
           return line.replace(/URI="([^"]+)"/g, (match, p1) => {
             const absoluteUrl = p1.startsWith('http') ? p1 : new URL(p1, baseUrl).href;
@@ -67,7 +66,6 @@ export async function GET(request: NextRequest) {
           });
         }
 
-        // Handle segment URLs
         const absoluteUrl = line.startsWith('http') ? line : new URL(line, baseUrl).href;
         return `/api/proxy?url=${encodeURIComponent(absoluteUrl)}`;
       });
@@ -79,20 +77,23 @@ export async function GET(request: NextRequest) {
     headers.set('Content-Type', contentType || 'application/octet-stream');
     headers.set('Access-Control-Allow-Origin', '*');
 
-    // Cache segments longer, but playlists and keys shorter
+    if (response.headers['content-range']) {
+        headers.set('Content-Range', response.headers['content-range'] as string);
+    }
+
+    // High performance caching for segments
     if (url.includes('.m3u8') || url.includes('.key') || url.includes('mon.key')) {
       headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
     } else {
-      // Optimized caching for segments
       headers.set('Cache-Control', 'public, max-age=86400, stale-while-revalidate=3600');
     }
 
     return new NextResponse(data, {
-      status: 200,
+      status: response.status,
       headers,
     });
   } catch (error: any) {
-    console.error('Proxy error for URL:', url, error.message);
+    console.error('Proxy error:', url, error.message);
     return new NextResponse('Proxy error', { status: 500 });
   }
 }

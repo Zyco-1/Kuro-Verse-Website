@@ -1,0 +1,24 @@
+npm warn Unknown project config "npm-install-checks". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> anime-site@0.1.0 dev
+> next dev
+
+ ⚠ Port 3000 is in use, trying 3001 instead.
+ ⚠ Port 3001 is in use, trying 3002 instead.
+   ▲ Next.js 15.2.6
+   - Local:        http://localhost:3002
+   - Network:      http://192.168.0.2:3002
+
+ ✓ Starting...
+ ✓ Ready in 2.2s
+ ○ Compiling /watch/[id]/[episode] ...
+ ✓ Compiled /watch/[id]/[episode] in 11.8s (1760 modules)
+ ✓ Compiled in 1592ms (820 modules)
+ GET /watch/1/1 200 in 16098ms
+ ○ Compiling /api/anime/episodes/[id] ...
+ ✓ Compiled /api/anime/episodes/[id] in 4.1s (1894 modules)
+ GET /api/anime/servers/1/1 200 in 7968ms
+ GET /api/anime/episodes/1 200 in 8236ms
+ ✓ Compiled in 1059ms (821 modules)
+ ✓ Compiled in 466ms (821 modules)
+[?25h

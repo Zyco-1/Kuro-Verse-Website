@@ -6,7 +6,6 @@ const STORAGE_KEY = 'kuroverse_watched';
 
 export interface HistoryItem {
   id: string | number;
-  paheId: string;
   episode: number;
   title: string;
   image: string;

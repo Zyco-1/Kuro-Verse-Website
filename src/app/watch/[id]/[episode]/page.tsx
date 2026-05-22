@@ -2,29 +2,23 @@
 
 import { use, useState, useEffect, useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getKuroEpisodes, getKuroStream } from '@/lib/api/kuroverse';
 import { getAniListMedia } from '@/lib/api/anilist';
-import { getReAnimeServers } from '@/lib/api/reanime';
-import Player from '@/components/player/Player';
+import ArtPlayer from '@/components/player/ArtPlayer';
 import Link from 'next/link';
-import { useSearchParams, useRouter } from 'next/navigation';
-import { List, Info, RefreshCcw } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { List, Info, RefreshCcw, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useHistory } from '@/hooks/useHistory';
 import DisqusComments from '@/components/layout/DisqusComments';
 
 export default function WatchPage({ params }: { params: Promise<{ id: string; episode: string }> }) {
   const { id, episode } = use(params);
-  const searchParams = useSearchParams();
   const router = useRouter();
-  const paheId = searchParams.get('paheId');
 
   const currentEpisode = episode;
-  const [reAnimeSource, setReAnimeSource] = useState<{ url: string; subtitles: any[] } | null>(null);
+  const [streamInfo, setStreamInfo] = useState<{ url: string; subtitles: any[] } | null>(null);
   const [isExtracting, setIsExtracting] = useState(false);
-  const [autoNext, setAutoNext] = useState(true);
   const [streamType, setStreamType] = useState<'sub' | 'dub'>('sub');
-  const [quality, setQuality] = useState<string | null>(null);
   const { addToHistory } = useHistory();
 
   const { data: media, isLoading: mediaLoading } = useQuery({
@@ -32,116 +26,92 @@ export default function WatchPage({ params }: { params: Promise<{ id: string; ep
     queryFn: () => getAniListMedia(id),
   });
 
-  // ReAnime Integration
-  const { data: reAnimeServers, isLoading: reAnimeLoading } = useQuery({
-    queryKey: ['reanime-servers', id, currentEpisode],
-    queryFn: () => getReAnimeServers(id, currentEpisode),
+  const { data: episodesData, isLoading: episodesLoading } = useQuery({
+    queryKey: ['anime-episodes', id],
+    queryFn: async () => {
+        const res = await fetch(`/api/anime/episodes/${id}`);
+        if (!res.ok) throw new Error('Failed to fetch episodes');
+        return await res.json();
+    },
+    enabled: !!id,
+  });
+
+  const { data: serversData, isLoading: serversLoading, refetch: refetchServers } = useQuery({
+    queryKey: ['anime-servers', id, currentEpisode],
+    queryFn: async () => {
+        const res = await fetch(`/api/anime/servers/${id}/${currentEpisode}`);
+        if (!res.ok) throw new Error('Failed to fetch servers');
+        return await res.json();
+    },
     enabled: !!id && !!currentEpisode,
   });
 
-  const { data: episodesData, isLoading: episodesLoading } = useQuery({
-    queryKey: ['kuro-episodes', paheId],
-    queryFn: () => getKuroEpisodes(paheId!),
-    enabled: !!paheId,
-  });
-
-  const episodeSession = useMemo(() => {
-    return episodesData?.find((ep: any) => ep.episode === parseFloat(currentEpisode))?.session;
-  }, [episodesData, currentEpisode]);
-
-  const { data: streamData, isLoading: streamLoading, refetch: refetchStream } = useQuery({
-    queryKey: ['kuro-stream', paheId, episodeSession, streamType],
-    queryFn: () => getKuroStream(paheId!, episodeSession, streamType),
-    enabled: !!paheId && !!episodeSession && !reAnimeSource,
-  });
-
-  const sortedStreams = useMemo(() => {
-    return streamData?.streams?.sort((a: any, b: any) => parseInt(b.quality) - parseInt(a.quality)) || [];
-  }, [streamData]);
-
   useEffect(() => {
-    async function handleReAnime() {
-      if (reAnimeServers) {
-        const filtered = reAnimeServers.filter((s: any) =>
+    async function handleExtraction() {
+      if (serversData && Array.isArray(serversData)) {
+        const filtered = serversData.filter((s: any) =>
           streamType === 'dub' ? s.dataType === 'Dubbed' : s.dataType === 'Original'
         );
-        const flix = filtered.find((s: any) => s.dataLink.includes('flixcloud.cc')) || filtered[0];
+        const server = filtered.find((s: any) => s.dataLink.includes('flixcloud.cc')) || filtered[0];
 
-        if (flix) {
-          if (flix.dataLink.includes('flixcloud.cc')) {
+        if (server) {
+          if (server.dataLink.includes('flixcloud.cc')) {
             setIsExtracting(true);
             try {
-              const res = await fetch(`/api/flix/extract?url=${encodeURIComponent(flix.dataLink)}`);
+              const res = await fetch(`/api/flix/extract?url=${encodeURIComponent(server.dataLink)}`);
               const data = await res.json();
               if (data.videoUrl) {
-                setReAnimeSource({ url: data.videoUrl, subtitles: data.subtitles || [] });
+                setStreamInfo({ url: data.videoUrl, subtitles: data.subtitles || [] });
+              } else {
+                setStreamInfo(null);
               }
             } catch (err) {
               console.error('Extraction failed', err);
+              setStreamInfo(null);
             } finally {
               setIsExtracting(false);
             }
           } else {
-            setReAnimeSource({ url: flix.dataLink, subtitles: [] });
+            setStreamInfo({ url: server.dataLink, subtitles: [] });
           }
         } else {
-          setReAnimeSource(null);
+          setStreamInfo(null);
         }
       }
     }
-    handleReAnime();
-  }, [reAnimeServers, streamType]);
+    handleExtraction();
+  }, [serversData, streamType]);
 
-  useEffect(() => {
-    if (sortedStreams.length > 0) {
-      setQuality(sortedStreams[0].url);
-    }
-  }, [sortedStreams]);
-
-  const rawStreamUrl = reAnimeSource?.url || quality || sortedStreams[0]?.url;
-  // Use our proxy for m3u8 links to handle headers and cookies
-  const streamUrl = rawStreamUrl ? `/api/proxy?url=${encodeURIComponent(rawStreamUrl)}` : null;
+  const streamUrl = streamInfo?.url ? `/api/proxy?url=${encodeURIComponent(streamInfo.url)}` : null;
 
   const handleEpisodeEnd = useCallback(() => {
-    if (!autoNext || !episodesData) return;
+    if (!episodesData) return;
 
-    const sortedEps = [...episodesData].sort((a: any, b: any) => a.episode - b.episode);
-    const currentIndex = sortedEps.findIndex((ep: any) => ep.episode === parseFloat(currentEpisode));
+    const currentIndex = episodesData.findIndex((ep: any) => parseFloat(ep.episode) === parseFloat(currentEpisode));
 
-    if (currentIndex !== -1 && currentIndex < sortedEps.length - 1) {
-      const nextEp = sortedEps[currentIndex + 1];
-      router.push(`/watch/${id}/${nextEp.episode}?paheId=${paheId}`);
+    if (currentIndex !== -1 && currentIndex < episodesData.length - 1) {
+      const nextEp = episodesData[currentIndex + 1];
+      router.push(`/watch/${id}/${nextEp.episode}`);
     }
-  }, [autoNext, episodesData, currentEpisode, id, paheId, router]);
+  }, [episodesData, currentEpisode, id, router]);
 
   useEffect(() => {
-    if (media && paheId) {
+    if (media) {
       addToHistory({
         id: parseInt(id),
         episode: parseFloat(currentEpisode),
         title: media.title?.english || media.title?.romaji || media.title || 'Unknown Anime',
         image: media.coverImage?.large || media.coverImage?.medium || media?.bannerImage,
-        paheId: paheId,
         updatedAt: Date.now()
       });
     }
-  }, [media, currentEpisode, paheId, id, addToHistory]);
+  }, [media, currentEpisode, id, addToHistory]);
 
   const disqusConfig = useMemo(() => ({
-    url: typeof window !== 'undefined' ? window.location.origin + window.location.pathname + `?paheId=${paheId}` : '',
+    url: typeof window !== 'undefined' ? window.location.origin + window.location.pathname : '',
     identifier: `anime-${id}`,
     title: media?.title?.english || media?.title?.romaji || media?.title || 'Anime'
-  }), [id, media, paheId]);
-
-  if (!paheId) {
-      return (
-          <div className="h-screen flex flex-col items-center justify-center gap-4 text-center px-6">
-              <div className="text-primary text-4xl font-black uppercase">SESSION MISSING</div>
-              <p className="text-white/40 font-bold max-w-sm">No streaming session was provided. Please go back to the details page and click Watch Now again.</p>
-              <Link href={`/anime/${id}`} className="bg-primary text-black px-8 py-3 rounded-full font-black uppercase">Back to Details</Link>
-          </div>
-      )
-  }
+  }), [id, media]);
 
   return (
     <div className="flex flex-col gap-8 px-6 md:px-16 py-8">
@@ -157,46 +127,52 @@ export default function WatchPage({ params }: { params: Promise<{ id: string; ep
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         <div className="lg:col-span-3 flex flex-col gap-6">
-          {streamLoading || episodesLoading || reAnimeLoading || isExtracting ? (
-            <div className="w-full aspect-video bg-white/5 rounded-2xl animate-pulse flex items-center justify-center border border-white/5">
-              <div className="flex flex-col items-center gap-4">
-                  <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-                  <div className="text-primary font-black text-2xl animate-pulse uppercase tracking-tighter">
-                    {isExtracting ? 'DECRYPTING...' : 'FETCHING STREAM...'}
-                  </div>
-              </div>
+          {serversLoading || episodesLoading || isExtracting ? (
+            <div className="w-full aspect-video bg-white/5 rounded-2xl animate-pulse flex items-center justify-center border border-white/5 relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/5 to-transparent animate-shimmer" />
+                <div className="flex flex-col items-center gap-4 z-10">
+                    <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                    <div className="text-primary font-black text-2xl uppercase tracking-tighter text-glow">
+                        {isExtracting ? 'Decrypting Stream...' : 'Loading Media...'}
+                    </div>
+                </div>
             </div>
           ) : streamUrl ? (
-            <Player
+            <ArtPlayer
               key={streamUrl}
               src={streamUrl}
               poster={media?.bannerImage || media?.coverImage?.large}
-              title={`${media?.title?.english || media?.title?.romaji || 'Anime'} - Episode ${currentEpisode}`}
-              subtitles={reAnimeSource?.subtitles}
+              title={`${media?.title?.english || media?.title?.romaji} - Episode ${currentEpisode}`}
+              subtitles={streamInfo?.subtitles}
+              audioPreference={streamType}
               onEnded={handleEpisodeEnd}
             />
           ) : (
             <div className="w-full aspect-video bg-white/5 rounded-2xl flex flex-col items-center justify-center text-white/20 font-bold border border-white/5 gap-4">
-              <div className="text-3xl font-black uppercase italic">COMING SOON</div>
-              <p className="text-xs uppercase tracking-widest text-white/40">This episode or server is currently unavailable.</p>
-              <button onClick={() => refetchStream()} className="bg-primary/10 hover:bg-primary/20 text-primary px-6 py-2 rounded-full border border-primary/20 transition-all font-black text-xs uppercase flex items-center gap-2">
-                  <RefreshCcw size={14} /> Retry Fetch
+              <div className="text-4xl font-black uppercase italic tracking-tighter text-primary">COMING SOON</div>
+              <p className="text-xs uppercase tracking-widest text-white/40 font-black">This episode or server is not available yet.</p>
+              <button onClick={() => refetchServers()} className="bg-primary/10 hover:bg-primary/20 text-primary px-8 py-3 rounded-full border border-primary/20 transition-all font-black text-xs uppercase flex items-center gap-2 mt-4 hover:scale-105">
+                  <RefreshCcw size={16} /> Force Reload
               </button>
             </div>
           )}
 
-          <div className="flex flex-col gap-4 bg-white/5 p-8 rounded-2xl border border-white/5">
+          <div className="flex flex-col gap-4 bg-white/5 p-8 rounded-2xl border border-white/5 backdrop-blur-sm relative overflow-hidden group">
+            <div className="absolute top-0 left-0 w-1 h-full bg-primary opacity-50 group-hover:h-full transition-all duration-500" />
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <h1 className="text-2xl font-black uppercase tracking-tight truncate max-w-xl">
-                {media?.title?.english || media?.title?.romaji} - Episode {currentEpisode}
-              </h1>
+              <div className="flex flex-col gap-1">
+                <h1 className="text-2xl font-black uppercase tracking-tight truncate max-w-xl text-glow">
+                  {media?.title?.english || media?.title?.romaji}
+                </h1>
+                <div className="text-xs font-black text-primary uppercase tracking-[0.2em]">Episode {currentEpisode}</div>
+              </div>
               <div className="flex items-center gap-3 shrink-0">
-                 <div className="flex items-center bg-black/40 rounded-full p-1 border border-white/5">
+                 <div className="flex items-center bg-black/40 rounded-full p-1.5 border border-white/5 shadow-inner">
                    <button
                      onClick={() => setStreamType('sub')}
                      className={cn(
-                       "px-4 py-1.5 rounded-full text-xs font-black uppercase transition-all",
-                       streamType === 'sub' ? "bg-primary text-black" : "text-white/40 hover:text-white"
+                       "px-6 py-2 rounded-full text-xs font-black uppercase transition-all tracking-widest",
+                       streamType === 'sub' ? "bg-primary text-black shadow-lg shadow-primary/20" : "text-white/40 hover:text-white"
                      )}
                    >
                      SUB
@@ -204,50 +180,13 @@ export default function WatchPage({ params }: { params: Promise<{ id: string; ep
                    <button
                      onClick={() => setStreamType('dub')}
                      className={cn(
-                       "px-4 py-1.5 rounded-full text-xs font-black uppercase transition-all",
-                       streamType === 'dub' ? "bg-primary text-black" : "text-white/40 hover:text-white"
+                       "px-6 py-2 rounded-full text-xs font-black uppercase transition-all tracking-widest",
+                       streamType === 'dub' ? "bg-primary text-black shadow-lg shadow-primary/20" : "text-white/40 hover:text-white"
                      )}
                    >
                      DUB
                    </button>
                  </div>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between mt-2 border-t border-white/5 pt-4">
-              <div className="flex items-center gap-6">
-                {sortedStreams.length > 0 && (
-                   <select
-                    value={quality || ''}
-                    onChange={(e) => setQuality(e.target.value)}
-                    className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-xs font-bold focus:outline-none focus:ring-1 focus:ring-primary appearance-none cursor-pointer hover:bg-white/10 transition-all"
-                   >
-                     {sortedStreams.map((s: any) => (
-                       <option key={s.url} value={s.url}>{s.quality}p ({s.filesize})</option>
-                     ))}
-                   </select>
-                )}
-                <div className="text-white/50 font-bold text-sm hidden md:block">
-                  {media?.seasonYear} • {media?.format}
-                </div>
-              </div>
-
-              <div className="flex items-center gap-4">
-                <label className="flex items-center gap-2 cursor-pointer group">
-                  <span className="text-[10px] font-black uppercase text-white/40 group-hover:text-white transition-colors">Auto Next</span>
-                  <div
-                    onClick={() => setAutoNext(!autoNext)}
-                    className={cn(
-                      "w-10 h-5 rounded-full relative transition-all",
-                      autoNext ? "bg-primary" : "bg-white/10"
-                    )}
-                  >
-                    <div className={cn(
-                      "absolute top-1 w-3 h-3 bg-white rounded-full transition-all",
-                      autoNext ? "left-6" : "left-1"
-                    )} />
-                  </div>
-                </label>
               </div>
             </div>
           </div>
@@ -259,40 +198,41 @@ export default function WatchPage({ params }: { params: Promise<{ id: string; ep
         </div>
 
         <div className="flex flex-col gap-6">
-           <div className="bg-white/5 rounded-2xl border border-white/5 flex flex-col overflow-hidden">
-             <div className="p-5 border-b border-white/5 bg-white/5 flex items-center justify-between">
-               <h3 className="font-black uppercase tracking-tighter flex items-center gap-2">
-                 <List size={18} /> Episode List
+           <div className="bg-white/5 rounded-2xl border border-white/5 flex flex-col overflow-hidden backdrop-blur-md">
+             <div className="p-6 border-b border-white/5 bg-white/5 flex items-center justify-between">
+               <h3 className="font-black uppercase tracking-tighter flex items-center gap-2 text-primary">
+                 <List size={20} /> Episode List
                </h3>
-               <span className="text-xs font-bold text-primary tracking-widest">{episodesData?.length || 0} EPS</span>
+               <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">{episodesData?.length || 0} EPS</span>
              </div>
-             <div className="max-h-[600px] overflow-y-auto p-2 flex flex-col gap-1">
+             <div className="max-h-[600px] overflow-y-auto p-3 flex flex-col gap-2 custom-scrollbar">
                {episodesLoading ? (
-                   [...Array(10)].map((_, i) => <div key={i} className="h-10 bg-white/5 rounded-xl animate-pulse" />)
-               ) : (episodesData || []).slice().sort((a: any, b: any) => a.episode - b.episode).map((ep: any) => (
+                   [...Array(10)].map((_, i) => <div key={i} className="h-12 bg-white/5 rounded-xl animate-pulse" />)
+               ) : (episodesData || []).map((ep: any) => (
                  <Link
                    key={ep.episode}
-                   href={`/watch/${id}/${ep.episode}?paheId=${paheId}`}
+                   href={`/watch/${id}/${ep.episode}`}
                    className={cn(
-                     "px-4 py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-between group",
-                     parseFloat(currentEpisode) === ep.episode
-                        ? "bg-primary text-black sexy-shadow scale-[1.02]"
-                        : "hover:bg-white/5 text-white/50 hover:text-white"
+                     "px-5 py-4 rounded-xl font-black text-xs transition-all flex items-center justify-between group relative overflow-hidden",
+                     parseFloat(currentEpisode) === parseFloat(ep.episode)
+                        ? "bg-primary text-black sexy-shadow translate-x-1"
+                        : "hover:bg-white/5 text-white/50 hover:text-white hover:translate-x-1"
                    )}
                  >
-                   <span>Episode {ep.episode}</span>
+                   <span className="relative z-10 uppercase tracking-widest">Episode {ep.episode}</span>
+                   {parseFloat(currentEpisode) === parseFloat(ep.episode) && <Sparkles size={14} className="relative z-10" />}
                  </Link>
                ))}
              </div>
            </div>
 
-           <Link href={`/anime/${id}`} className="bg-white/5 hover:bg-white/10 p-5 rounded-2xl border border-white/5 flex items-center gap-4 transition-all">
-              <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
-                  <Info size={24} className="text-primary" />
+           <Link href={`/anime/${id}`} className="bg-white/5 hover:bg-white/10 p-6 rounded-2xl border border-white/5 flex items-center gap-5 transition-all group hover:scale-[1.02]">
+              <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center shrink-0 border border-primary/20 group-hover:bg-primary/20 transition-colors">
+                  <Info size={28} className="text-primary" />
               </div>
               <div>
-                <div className="text-[10px] font-black text-white/40 uppercase tracking-widest">Information</div>
-                <div className="font-black uppercase tracking-tight">View Details</div>
+                <div className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] mb-1">Anime Info</div>
+                <div className="font-black uppercase tracking-tighter text-lg">View Details</div>
               </div>
            </Link>
         </div>

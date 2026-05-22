@@ -2,8 +2,7 @@
 
 import { use } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getKuroAnimeDetails, searchKuro } from '@/lib/api/kuroverse';
-import { getAniListMediaByTitle } from '@/lib/api/anilist';
+import { getAniListMedia } from '@/lib/api/anilist';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Play, Star, Calendar, Clock, RefreshCcw } from 'lucide-react';
@@ -24,29 +23,20 @@ export default function AnimeDetailsPage({
   const { data: media, isLoading, error, refetch } = useQuery({
     queryKey: ['anime-details', actualId, isPaheId, queryTitle],
     queryFn: async () => {
-        if (isPaheId) {
-            if (queryTitle) {
-                return await getAniListMediaByTitle(queryTitle);
-            }
-            throw new Error('ID_MISMATCH');
-        }
-        return await getKuroAnimeDetails(actualId);
+        return await getAniListMedia(actualId);
     },
     retry: 1
   });
 
-  const { data: paheData, isLoading: paheLoading } = useQuery({
-    queryKey: ['pahe-search-details', media?.title?.romaji || media?.title],
+  const { data: episodesData, isLoading: episodesLoading } = useQuery({
+    queryKey: ['anime-episodes-list', actualId],
     queryFn: async () => {
-      const title = media?.title?.romaji || media?.title;
-      if (!title) return null;
-      const res = await searchKuro(title);
-      return res?.find((r: any) => r.title === title) || res?.[0];
+        const res = await fetch(`/api/anime/episodes/${actualId}`);
+        if (!res.ok) return null;
+        return await res.json();
     },
-    enabled: !!media && !isPaheId,
+    enabled: !!media,
   });
-
-  const session = isPaheId ? actualId : paheData?.session;
 
   if (isLoading) {
       return <div className="h-screen flex items-center justify-center">
@@ -108,16 +98,16 @@ export default function AnimeDetailsPage({
             />
           </div>
           <div className="mt-6 flex flex-col gap-3">
-             {session ? (
+             {episodesData && episodesData.length > 0 ? (
                <Link
-                href={`/watch/${media.id}/1?paheId=${session}`}
+                href={`/watch/${media.id}/1`}
                 className="w-full bg-primary hover:bg-primary/90 text-black py-4 rounded-xl font-black text-center flex items-center justify-center gap-2 sexy-shadow transition-all hover:scale-[1.02]"
               >
                 <Play fill="black" size={20} /> WATCH NOW
               </Link>
              ) : (
-                <div className="w-full bg-white/5 text-white/50 py-4 rounded-xl font-bold text-center border border-white/5">
-                  {paheLoading ? 'FINDING STREAMS...' : 'NO STREAMS FOUND'}
+                <div className="w-full bg-white/5 text-white/40 py-4 rounded-xl font-black text-xs uppercase tracking-widest text-center border border-white/5">
+                  {episodesLoading ? 'Checking Availability...' : 'Coming Soon'}
                 </div>
              )}
           </div>
