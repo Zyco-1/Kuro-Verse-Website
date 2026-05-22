@@ -4,6 +4,7 @@ import { use, useState, useEffect, useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getKuroEpisodes, getKuroStream } from '@/lib/api/kuroverse';
 import { getAniListMedia } from '@/lib/api/anilist';
+import { getReAnimeServers } from '@/lib/api/reanime';
 import Player from '@/components/player/Player';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -19,6 +20,8 @@ export default function WatchPage({ params }: { params: Promise<{ id: string; ep
   const paheId = searchParams.get('paheId');
 
   const currentEpisode = episode;
+  const [reAnimeSource, setReAnimeSource] = useState<{ url: string; subtitles: any[] } | null>(null);
+  const [isExtracting, setIsExtracting] = useState(false);
   const [autoNext, setAutoNext] = useState(true);
   const [streamType, setStreamType] = useState<'sub' | 'dub'>('sub');
   const [quality, setQuality] = useState<string | null>(null);
@@ -27,6 +30,13 @@ export default function WatchPage({ params }: { params: Promise<{ id: string; ep
   const { data: media, isLoading: mediaLoading } = useQuery({
     queryKey: ['anime-details-anilist', id],
     queryFn: () => getAniListMedia(id),
+  });
+
+  // ReAnime Integration
+  const { data: reAnimeServers, isLoading: reAnimeLoading } = useQuery({
+    queryKey: ['reanime-servers', id, currentEpisode],
+    queryFn: () => getReAnimeServers(id, currentEpisode),
+    enabled: !!id && !!currentEpisode,
   });
 
   const { data: episodesData, isLoading: episodesLoading } = useQuery({
@@ -42,7 +52,7 @@ export default function WatchPage({ params }: { params: Promise<{ id: string; ep
   const { data: streamData, isLoading: streamLoading, refetch: refetchStream } = useQuery({
     queryKey: ['kuro-stream', paheId, episodeSession, streamType],
     queryFn: () => getKuroStream(paheId!, episodeSession, streamType),
-    enabled: !!paheId && !!episodeSession,
+    enabled: !!paheId && !!episodeSession && !reAnimeSource,
   });
 
   const sortedStreams = useMemo(() => {
@@ -50,12 +60,45 @@ export default function WatchPage({ params }: { params: Promise<{ id: string; ep
   }, [streamData]);
 
   useEffect(() => {
+    async function handleReAnime() {
+      if (reAnimeServers) {
+        const filtered = reAnimeServers.filter((s: any) =>
+          streamType === 'dub' ? s.dataType === 'Dubbed' : s.dataType === 'Original'
+        );
+        const flix = filtered.find((s: any) => s.dataLink.includes('flixcloud.cc')) || filtered[0];
+
+        if (flix) {
+          if (flix.dataLink.includes('flixcloud.cc')) {
+            setIsExtracting(true);
+            try {
+              const res = await fetch(`/api/flix/extract?url=${encodeURIComponent(flix.dataLink)}`);
+              const data = await res.json();
+              if (data.videoUrl) {
+                setReAnimeSource({ url: data.videoUrl, subtitles: data.subtitles || [] });
+              }
+            } catch (err) {
+              console.error('Extraction failed', err);
+            } finally {
+              setIsExtracting(false);
+            }
+          } else {
+            setReAnimeSource({ url: flix.dataLink, subtitles: [] });
+          }
+        } else {
+          setReAnimeSource(null);
+        }
+      }
+    }
+    handleReAnime();
+  }, [reAnimeServers, streamType]);
+
+  useEffect(() => {
     if (sortedStreams.length > 0) {
       setQuality(sortedStreams[0].url);
     }
   }, [sortedStreams]);
 
-  const rawStreamUrl = quality || sortedStreams[0]?.url;
+  const rawStreamUrl = reAnimeSource?.url || quality || sortedStreams[0]?.url;
   // Use our proxy for m3u8 links to handle headers and cookies
   const streamUrl = rawStreamUrl ? `/api/proxy?url=${encodeURIComponent(rawStreamUrl)}` : null;
 
@@ -114,11 +157,13 @@ export default function WatchPage({ params }: { params: Promise<{ id: string; ep
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         <div className="lg:col-span-3 flex flex-col gap-6">
-          {streamLoading || episodesLoading ? (
+          {streamLoading || episodesLoading || reAnimeLoading || isExtracting ? (
             <div className="w-full aspect-video bg-white/5 rounded-2xl animate-pulse flex items-center justify-center border border-white/5">
               <div className="flex flex-col items-center gap-4">
                   <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-                  <div className="text-primary font-black text-2xl animate-pulse uppercase tracking-tighter">FETCHING STREAM...</div>
+                  <div className="text-primary font-black text-2xl animate-pulse uppercase tracking-tighter">
+                    {isExtracting ? 'DECRYPTING...' : 'FETCHING STREAM...'}
+                  </div>
               </div>
             </div>
           ) : streamUrl ? (
@@ -126,12 +171,14 @@ export default function WatchPage({ params }: { params: Promise<{ id: string; ep
               key={streamUrl}
               src={streamUrl}
               poster={media?.bannerImage || media?.coverImage?.large}
-              title={`Episode ${currentEpisode}`}
+              title={`${media?.title?.english || media?.title?.romaji || 'Anime'} - Episode ${currentEpisode}`}
+              subtitles={reAnimeSource?.subtitles}
               onEnded={handleEpisodeEnd}
             />
           ) : (
             <div className="w-full aspect-video bg-white/5 rounded-2xl flex flex-col items-center justify-center text-white/20 font-bold border border-white/5 gap-4">
-              <div className="text-3xl font-black uppercase italic">STREAM NOT FOUND</div>
+              <div className="text-3xl font-black uppercase italic">COMING SOON</div>
+              <p className="text-xs uppercase tracking-widest text-white/40">This episode or server is currently unavailable.</p>
               <button onClick={() => refetchStream()} className="bg-primary/10 hover:bg-primary/20 text-primary px-6 py-2 rounded-full border border-primary/20 transition-all font-black text-xs uppercase flex items-center gap-2">
                   <RefreshCcw size={14} /> Retry Fetch
               </button>

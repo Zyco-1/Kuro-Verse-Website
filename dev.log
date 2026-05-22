@@ -13,3 +13,12 @@ npm warn Unknown project config "npm-install-checks". This will stop working in 
  ✓ Compiled / in 4.8s (1741 modules)
  GET / 200 in 5944ms
  ✓ Compiled in 1242ms (817 modules)
+ ✓ Compiled in 7.6s (817 modules)
+ ✓ Compiled in 1103ms (803 modules)
+ ✓ Compiled in 763ms (817 modules)
+ ✓ Compiled in 485ms (817 modules)
+ ✓ Compiled in 450ms (817 modules)
+ ✓ Compiled in 516ms (817 modules)
+ ✓ Compiled in 534ms (817 modules)
+ ✓ Compiled in 481ms (817 modules)
+ ✓ Compiled in 410ms (817 modules)

@@ -83,7 +83,8 @@ export async function GET(request: NextRequest) {
     if (url.includes('.m3u8') || url.includes('.key') || url.includes('mon.key')) {
       headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
     } else {
-      headers.set('Cache-Control', 'public, max-age=3600');
+      // Optimized caching for segments
+      headers.set('Cache-Control', 'public, max-age=86400, stale-while-revalidate=3600');
     }
 
     return new NextResponse(data, {
