@@ -23,6 +23,9 @@ export async function GET(request: NextRequest) {
   } else if (url.includes('flixcloud.cc')) {
     referer = 'https://flixcloud.cc/';
     origin = 'https://flixcloud.cc';
+  } else if (url.includes('reanime.to')) {
+    referer = 'https://reanime.to/';
+    origin = 'https://reanime.to';
   }
 
   try {

@@ -3,6 +3,7 @@
 import { use } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getAniListMedia } from '@/lib/api/anilist';
+import { getReAnimeThumbnails } from '@/lib/api/reanime';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Play, Star, Calendar, Clock, RefreshCcw } from 'lucide-react';
@@ -30,11 +31,7 @@ export default function AnimeDetailsPage({
 
   const { data: episodesData, isLoading: episodesLoading } = useQuery({
     queryKey: ['anime-episodes-list', actualId],
-    queryFn: async () => {
-        const res = await fetch(`/api/anime/episodes/${actualId}`);
-        if (!res.ok) return null;
-        return await res.json();
-    },
+    queryFn: () => getReAnimeThumbnails(actualId),
     enabled: !!media,
   });
 
@@ -98,7 +95,7 @@ export default function AnimeDetailsPage({
             />
           </div>
           <div className="mt-6 flex flex-col gap-3">
-             {episodesData && episodesData.length > 0 ? (
+             {episodesData && Object.keys(episodesData).length > 0 ? (
                <Link
                 href={`/watch/${media.id}/1`}
                 className="w-full bg-primary hover:bg-primary/90 text-black py-4 rounded-xl font-black text-center flex items-center justify-center gap-2 sexy-shadow transition-all hover:scale-[1.02]"

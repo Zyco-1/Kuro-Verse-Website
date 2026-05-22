@@ -3,6 +3,7 @@
 import { use, useState, useEffect, useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getAniListMedia } from '@/lib/api/anilist';
+import { getReAnimeThumbnails, getReAnimeServers } from '@/lib/api/reanime';
 import ArtPlayer from '@/components/player/ArtPlayer';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -26,23 +27,25 @@ export default function WatchPage({ params }: { params: Promise<{ id: string; ep
     queryFn: () => getAniListMedia(id),
   });
 
-  const { data: episodesData, isLoading: episodesLoading } = useQuery({
+  const { data: reAnimeData, isLoading: episodesLoading } = useQuery({
     queryKey: ['anime-episodes', id],
-    queryFn: async () => {
-        const res = await fetch(`/api/anime/episodes/${id}`);
-        if (!res.ok) throw new Error('Failed to fetch episodes');
-        return await res.json();
-    },
+    queryFn: () => getReAnimeThumbnails(id),
     enabled: !!id,
   });
 
+  const episodesData = useMemo(() => {
+    if (!reAnimeData) return [];
+    return Object.keys(reAnimeData)
+        .sort((a, b) => parseFloat(a) - parseFloat(b))
+        .map(epNum => ({
+            episode: epNum,
+            thumbnail: (reAnimeData as any)[epNum]
+        }));
+  }, [reAnimeData]);
+
   const { data: serversData, isLoading: serversLoading, refetch: refetchServers } = useQuery({
     queryKey: ['anime-servers', id, currentEpisode],
-    queryFn: async () => {
-        const res = await fetch(`/api/anime/servers/${id}/${currentEpisode}`);
-        if (!res.ok) throw new Error('Failed to fetch servers');
-        return await res.json();
-    },
+    queryFn: () => getReAnimeServers(id, currentEpisode),
     enabled: !!id && !!currentEpisode,
   });
 
